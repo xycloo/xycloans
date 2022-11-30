@@ -3,7 +3,8 @@ use core::convert;
 
 use soroban_auth::{Identifier, Signature};
 use soroban_sdk::{
-    contracterror, contractimpl, contracttype, AccountId, Address, BigInt, BytesN, Env,
+    contracterror, contractimpl, contracttype, symbol, vec, AccountId, Address, BigInt, BytesN,
+    Env, IntoVal, RawVal, Symbol, Vec,
 };
 
 mod token {
@@ -29,7 +30,14 @@ pub struct FlashLoansContract;
 pub trait FlashLoansContractTrait {
     fn init(e: Env, token_id: BytesN<32>) -> Result<(), Error>;
 
-    fn borrow(e: Env, sig: Signature, amount: BigInt) -> Result<(), Error>;
+    fn borrow(
+        e: Env,
+        sig: Signature,
+        amount: BigInt,
+        action: Symbol,
+        target_id: BytesN<32>,
+        args: Vec<RawVal>,
+    ) -> Result<(), Error>;
 }
 
 /* This one would have been fancy to show/explain but feels kinda complex and quite an anti-pattern (wrapping the AccountId type)
@@ -67,15 +75,44 @@ impl FlashLoansContractTrait for FlashLoansContract {
         Ok(())
     }
 
-    fn borrow(e: Env, sig: Signature, amount: BigInt) -> Result<(), Error> {
+    fn borrow(
+        e: Env,
+        sig: Signature,
+        amount: BigInt,
+        action: Symbol,
+        target_id: BytesN<32>,
+        args: Vec<RawVal>,
+    ) -> Result<(), Error> {
         let key = DataKey::TokenId;
 
         if !e.data().has(key.clone()) {
-            return Err(Error::ContractAlreadyInitialized);
+            return Err(Error::GenericErr);
         }
+
+        let contract_id = Identifier::Contract(e.current_contract());
 
         let token_id: BytesN<32> = e.data().get(key).unwrap().unwrap();
         let client = token::Client::new(&e, token_id);
+
+        let borrower_id = sig.identifier(&e);
+        let b1 = client.balance(&contract_id);
+
+        client.xfer(
+            &Signature::Invoker,
+            &BigInt::zero(&e),
+            &Identifier::Contract(target_id.clone()),
+            &amount,
+        );
+        e.invoke_contract::<RawVal>(&target_id, &action, args);
+
+        let b3 = client.balance(&contract_id);
+        let diff = b3 - b1;
+
+        if diff < 0 {
+            return Err(Error::GenericErr);
+        }
+
+        client.xfer(&Signature::Invoker, &BigInt::zero(&e), &borrower_id, &diff);
 
         Ok(())
     }
@@ -84,13 +121,12 @@ impl FlashLoansContractTrait for FlashLoansContract {
 /*
 
 borrow:
-0. calculate user balance (b1)
-1. send the money to the user
-1.5 calculate new user balance (b2)
-2. user executes an action that immediately yields an interest
-2.5 calculate new user balance (b3)
-3. if b3 - (b2-b1) > 0
-
+0. calculate contract balance (b1)
+2. contract executes user-action that immediately yields an interest
+3. calculate new contract balance (b2)
+4. if b2-b1 < 0:
+- revoke tx
+4. pay b2-b1 to user.
 
 */
 
