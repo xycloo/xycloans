@@ -1,15 +1,19 @@
 #![cfg(test)]
 
-use super::*;
-
-use soroban_sdk::{
-    bigint,
-    testutils::{Accounts, Ledger, LedgerInfo},
-    BytesN, Env, IntoVal,
+use crate::{
+    contract::{FlashLoansContract, FlashLoansContractClient},
+    test::flash_loan_receiver_standard::{FlashLoanReceiver, FlashLoanReceiverClient},
+    token::Identifier,
 };
 
-#[test]
-fn test_err_msg() {}
+use super::*;
+
+use soroban_auth::Signature;
+use soroban_sdk::{
+    bigint, bytesn, contractimpl,
+    testutils::{Accounts, Ledger, LedgerInfo},
+    BigInt, BytesN, Env, IntoVal,
+};
 
 #[test]
 fn test_successful_borrow() {
@@ -26,12 +30,16 @@ fn test_successful_borrow() {
     let u1 = env.accounts().generate();
     let u2 = env.accounts().generate();
 
-    let contract_id = env.register_contract(None, FlashLoansContract);
-    let client = FlashLoansContractClient::new(&env, &contract_id);
+    let contract_id =
+        env.register_contract(&BytesN::from_array(&env, &[5; 32]), FlashLoansContract);
+    let flash_loan_client = FlashLoansContractClient::new(&env, &contract_id);
 
     let increment_contract =
         env.register_contract(&BytesN::from_array(&env, &[2; 32]), BalIncrement);
     let increment_client = BalIncrementClient::new(&env, &increment_contract);
+
+    let receiver_contract = env.register_contract(None, FlashLoanReceiver);
+    let receiver_client = FlashLoanReceiverClient::new(&env, &receiver_contract);
 
     let id = env.register_contract_token(&BytesN::from_array(
         &env,
@@ -40,7 +48,6 @@ fn test_successful_borrow() {
             232, 144, 71, 210, 113, 57, 46, 203, 166, 210, 20, 155, 105,
         ],
     ));
-
     let token = token::Client::new(&env, &id);
     // decimals, name, symbol don't matter in tests
     token.init(
@@ -65,17 +72,21 @@ fn test_successful_borrow() {
         &Identifier::Contract(increment_contract.clone()),
         &BigInt::from_i32(&env, 1000000000),
     );
-    client.init(&id);
 
-    let result = client.with_source_account(&u1).try_borrow(
-        &Signature::Invoker,
-        &bigint!(&env, 100),
-        &symbol!("increment"),
-        &increment_contract,
-        &(Identifier::Contract(contract_id), bigint!(&env, 100)).into_val(&env),
+    flash_loan_client.init(&id);
+    flash_loan_client.borrow(
+        &Identifier::Contract(receiver_contract.clone()),
+        &bigint!(&env, 100000),
     );
 
-    assert_eq!(token.balance(&Identifier::Account(u1.clone())), 10);
+    assert_eq!(
+        token.balance(&Identifier::Contract(receiver_contract.clone())),
+        50
+    );
+    assert_eq!(
+        token.balance(&Identifier::Contract(contract_id.clone())),
+        1000000050
+    );
 }
 
 #[test]
@@ -93,12 +104,16 @@ fn test_unsuccessful_borrow() {
     let u1 = env.accounts().generate();
     let u2 = env.accounts().generate();
 
-    let contract_id = env.register_contract(None, FlashLoansContract);
-    let client = FlashLoansContractClient::new(&env, &contract_id);
+    let contract_id =
+        env.register_contract(&BytesN::from_array(&env, &[5; 32]), FlashLoansContract);
+    let flash_loan_client = FlashLoansContractClient::new(&env, &contract_id);
 
     let increment_contract =
         env.register_contract(&BytesN::from_array(&env, &[2; 32]), BalIncrement);
     let increment_client = BalIncrementClient::new(&env, &increment_contract);
+
+    let receiver_contract = env.register_contract(None, fail::FlashLoanReceiver);
+    let receiver_client = fail::FlashLoanReceiverClient::new(&env, &receiver_contract);
 
     let id = env.register_contract_token(&BytesN::from_array(
         &env,
@@ -107,7 +122,6 @@ fn test_unsuccessful_borrow() {
             232, 144, 71, 210, 113, 57, 46, 203, 166, 210, 20, 155, 105,
         ],
     ));
-
     let token = token::Client::new(&env, &id);
     // decimals, name, symbol don't matter in tests
     token.init(
@@ -132,29 +146,128 @@ fn test_unsuccessful_borrow() {
         &Identifier::Contract(increment_contract.clone()),
         &BigInt::from_i32(&env, 1000000000),
     );
-    client.init(&id);
 
-    let result = client.with_source_account(&u1).try_borrow(
-        &Signature::Invoker,
-        &bigint!(&env, 100),
-        &symbol!("decrement"),
-        &increment_contract,
-        &(
-            Identifier::Contract(contract_id.clone()),
-            bigint!(&env, 100),
-        )
-            .into_val(&env),
+    flash_loan_client.init(&id);
+    let res = flash_loan_client.try_borrow(
+        &Identifier::Contract(receiver_contract.clone()),
+        &bigint!(&env, 100000),
     );
 
-    assert_eq!(token.balance(&Identifier::Account(u1.clone())), 0);
     assert_eq!(
-        token.balance(&Identifier::Contract(contract_id)),
+        token.balance(&Identifier::Contract(receiver_contract.clone())),
+        0
+    );
+
+    assert_eq!(
+        token.balance(&Identifier::Contract(contract_id.clone())),
         1000000000
     );
-    assert_eq!(
-        token.balance(&Identifier::Contract(increment_contract)),
-        1000000000
-    );
+}
+
+mod flash_loan_receiver_standard {
+    use soroban_auth::Identifier;
+    use soroban_sdk::{bigint, contractimpl, BigInt, BytesN, Env};
+
+    use crate::token::{self, Signature};
+
+    use super::BalIncrementClient;
+
+    pub struct FlashLoanReceiver;
+    pub struct FlashLoanReceiverFail;
+
+    fn compute_fee(e: &Env, amount: &BigInt) -> BigInt {
+        bigint!(e, 5) * amount / 10000 // 0.05%, still TBD
+    }
+
+    #[contractimpl]
+    impl FlashLoanReceiver {
+        pub fn exec_op(e: Env) {
+            let token_client = token::Client::new(
+                &e,
+                &BytesN::from_array(
+                    &e,
+                    &[
+                        78, 52, 121, 202, 209, 66, 106, 25, 193, 181, 10, 91, 46, 213, 58, 244,
+                        217, 115, 23, 232, 144, 71, 210, 113, 57, 46, 203, 166, 210, 20, 155, 105,
+                    ],
+                ),
+            );
+            let client = BalIncrementClient::new(&e, &BytesN::from_array(&e, &[2; 32]));
+
+            token_client.xfer(
+                &Signature::Invoker,
+                &BigInt::zero(&e),
+                &Identifier::Contract(BytesN::from_array(&e, &[2; 32])),
+                &bigint!(&e, 100000),
+            );
+            client.increment(
+                &Identifier::Contract(e.current_contract()),
+                &bigint!(&e, 100000),
+            );
+
+            let total_amount = bigint!(&e, 100000) + compute_fee(&e, &bigint!(&e, 100000));
+
+            token_client.approve(
+                &Signature::Invoker,
+                &BigInt::zero(&e),
+                &Identifier::Contract(BytesN::from_array(&e, &[5; 32])),
+                &total_amount,
+            );
+        }
+    }
+}
+
+mod fail {
+
+    use soroban_auth::Identifier;
+    use soroban_sdk::{bigint, contractimpl, BigInt, BytesN, Env};
+
+    use crate::token::{self, Signature};
+
+    use super::BalIncrementClient;
+
+    pub struct FlashLoanReceiver;
+
+    fn compute_fee(e: &Env, amount: &BigInt) -> BigInt {
+        bigint!(e, 5) * amount / 10000 // 0.05%, still TBD
+    }
+
+    #[contractimpl]
+    impl FlashLoanReceiver {
+        pub fn exec_op(e: Env) {
+            let token_client = token::Client::new(
+                &e,
+                &BytesN::from_array(
+                    &e,
+                    &[
+                        78, 52, 121, 202, 209, 66, 106, 25, 193, 181, 10, 91, 46, 213, 58, 244,
+                        217, 115, 23, 232, 144, 71, 210, 113, 57, 46, 203, 166, 210, 20, 155, 105,
+                    ],
+                ),
+            );
+            let client = BalIncrementClient::new(&e, &BytesN::from_array(&e, &[2; 32]));
+
+            token_client.xfer(
+                &Signature::Invoker,
+                &BigInt::zero(&e),
+                &Identifier::Contract(BytesN::from_array(&e, &[2; 32])),
+                &bigint!(&e, 100000),
+            );
+            client.decrement(
+                &Identifier::Contract(e.current_contract()),
+                &bigint!(&e, 100000),
+            );
+
+            let total_amount = bigint!(&e, 100000) + compute_fee(&e, &bigint!(&e, 100000));
+
+            token_client.approve(
+                &Signature::Invoker,
+                &BigInt::zero(&e),
+                &Identifier::Contract(BytesN::from_array(&e, &[5; 32])),
+                &total_amount,
+            );
+        }
+    }
 }
 
 pub struct BalIncrement;
@@ -175,7 +288,7 @@ impl BalIncrement {
             &Signature::Invoker,
             &BigInt::zero(&e),
             &id,
-            &(amount + bigint!(&e, 10)),
+            &(amount + bigint!(&e, 100)),
         )
     }
 
@@ -193,7 +306,7 @@ impl BalIncrement {
             &Signature::Invoker,
             &BigInt::zero(&e),
             &id,
-            &(amount - bigint!(&e, 10)),
+            &(amount - bigint!(&e, 100)),
         )
     }
 }

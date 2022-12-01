@@ -3,7 +3,8 @@
 ### Key concepts
 - the actions should be executed by an apposite user-contract rather than split in actions to be executed.
 - the checks should only be done by the Lender contract, if the receiver contract doesn't abide to the lending rules, the tx is reverted.
-  - we're using try in our calls to catch the possible errors like not enough allowance to spend and return then with something like `ContractError(4)`
+- we're using try in our calls to catch the possible errors like not enough allowance to spend and return then with something like `ContractError(4)`
+- we don't need A to specify anything abou the receiver call aside from the contract's id, since it must abide to a proposed standard trait `exec_op`.
 
 ### Workflow
 
