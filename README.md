@@ -12,6 +12,7 @@
 
 Preconditions: the interest $i$ is fixed.
 
+```
 (1) A -> Lender    :  A calls the lender with the amount to borrow $a$, the contract R to invoke (and the parameters).
 (2) Lender => R    :  Lender transfers the amount to the receiver contract.
 (3) Lender -> R    :  Lender invokes the Receiver contract's fn as specified by A in (1)
@@ -19,3 +20,4 @@ Preconditions: the interest $i$ is fixed.
 (5) Lender checks  :  The Lender now tries to try_xfer from the receiver to itself $a + i$:
 					   	- if it succeeds, it means that the lend-yield-borrow operation worked.
 						- if it doesn't, it means that the receiver contract either hasn't set up the correct allowance ($a$ + $i$, which is known since the interest is fixed).
+```
