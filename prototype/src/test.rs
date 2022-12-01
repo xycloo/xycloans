@@ -9,6 +9,9 @@ use soroban_sdk::{
 };
 
 #[test]
+fn test_err_msg() {}
+
+#[test]
 fn test_successful_borrow() {
     let env = Env::default();
 
