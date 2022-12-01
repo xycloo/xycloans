@@ -18,6 +18,7 @@ Preconditions: the interest $i$ is fixed.
 (3) Lender -> R    :  Lender invokes the Receiver contract's fn as specified by A in (1)
 (4) R -> External  :  The receiving contract can now start executing the the yielding operations.
 (5) Lender checks  :  The Lender now tries to try_xfer from the receiver to itself $a + i$:
-                      - if it bucceeds, it means that the lend-yield-borrow operation worked.
-					  - if it doesn't, it means that the receiver contract either hasn't set up the correct allowance ($a$ + $i$, which is known since the interest is fixed).x	
+    - if it bucceeds, it means that the lend-yield-borrow operation worked.
+	- if it doesn't, it means that the receiver contract either hasn't set up the correct allowance ($a$ + $i$, which is known since the interest is fixed).x	
+
 ```
