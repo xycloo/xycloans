@@ -893,6 +893,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "soroban-flash-loan-receiver-standard"
+version = "0.0.0"
+dependencies = [
+ "soroban-auth",
+ "soroban-sdk",
+]
+
+[[package]]
 name = "soroban-flash-loans-prototype"
 version = "0.0.0"
 dependencies = [

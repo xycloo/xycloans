@@ -15,7 +15,7 @@ pub fn get_token_id(e: &Env) -> BytesN<32> {
     e.data().get(DataKey::TokenId).unwrap().unwrap()
 }
 
-pub fn get_token_balance(e: &Env, id: &Identifier) -> BigInt {
+pub fn _get_token_balance(e: &Env, id: &Identifier) -> BigInt {
     let token_id: BytesN<32> = get_token_id(e);
     let client = token::Client::new(e, token_id);
 

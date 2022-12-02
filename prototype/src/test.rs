@@ -2,15 +2,16 @@
 
 use crate::{
     contract::{FlashLoansContract, FlashLoansContractClient},
-    test::flash_loan_receiver_standard::{FlashLoanReceiver, FlashLoanReceiverClient},
+    test::flash_loan_receiver_standard::FlashLoanReceiver,
     token::Identifier,
+    types::Error,
 };
 
 use super::*;
 
 use soroban_auth::Signature;
 use soroban_sdk::{
-    bigint, bytesn, contractimpl,
+    bigint, contractimpl,
     testutils::{Accounts, Ledger, LedgerInfo},
     BigInt, BytesN, Env, IntoVal,
 };
@@ -28,7 +29,6 @@ fn test_successful_borrow() {
     });
 
     let u1 = env.accounts().generate();
-    let u2 = env.accounts().generate();
 
     let contract_id =
         env.register_contract(&BytesN::from_array(&env, &[5; 32]), FlashLoansContract);
@@ -36,10 +36,8 @@ fn test_successful_borrow() {
 
     let increment_contract =
         env.register_contract(&BytesN::from_array(&env, &[2; 32]), BalIncrement);
-    let increment_client = BalIncrementClient::new(&env, &increment_contract);
 
     let receiver_contract = env.register_contract(None, FlashLoanReceiver);
-    let receiver_client = FlashLoanReceiverClient::new(&env, &receiver_contract);
 
     let id = env.register_contract_token(&BytesN::from_array(
         &env,
@@ -69,7 +67,7 @@ fn test_successful_borrow() {
     token.with_source_account(&u1).mint(
         &Signature::Invoker,
         &BigInt::zero(&env),
-        &Identifier::Contract(increment_contract.clone()),
+        &Identifier::Contract(increment_contract),
         &BigInt::from_i32(&env, 1000000000),
     );
 
@@ -79,12 +77,9 @@ fn test_successful_borrow() {
         &bigint!(&env, 100000),
     );
 
+    assert_eq!(token.balance(&Identifier::Contract(receiver_contract)), 50);
     assert_eq!(
-        token.balance(&Identifier::Contract(receiver_contract.clone())),
-        50
-    );
-    assert_eq!(
-        token.balance(&Identifier::Contract(contract_id.clone())),
+        token.balance(&Identifier::Contract(contract_id)),
         1000000050
     );
 }
@@ -102,7 +97,6 @@ fn test_unsuccessful_borrow() {
     });
 
     let u1 = env.accounts().generate();
-    let u2 = env.accounts().generate();
 
     let contract_id =
         env.register_contract(&BytesN::from_array(&env, &[5; 32]), FlashLoansContract);
@@ -110,10 +104,8 @@ fn test_unsuccessful_borrow() {
 
     let increment_contract =
         env.register_contract(&BytesN::from_array(&env, &[2; 32]), BalIncrement);
-    let increment_client = BalIncrementClient::new(&env, &increment_contract);
 
     let receiver_contract = env.register_contract(None, fail::FlashLoanReceiver);
-    let receiver_client = fail::FlashLoanReceiverClient::new(&env, &receiver_contract);
 
     let id = env.register_contract_token(&BytesN::from_array(
         &env,
@@ -143,7 +135,7 @@ fn test_unsuccessful_borrow() {
     token.with_source_account(&u1).mint(
         &Signature::Invoker,
         &BigInt::zero(&env),
-        &Identifier::Contract(increment_contract.clone()),
+        &Identifier::Contract(increment_contract),
         &BigInt::from_i32(&env, 1000000000),
     );
 
@@ -153,27 +145,22 @@ fn test_unsuccessful_borrow() {
         &bigint!(&env, 100000),
     );
 
-    assert_eq!(
-        token.balance(&Identifier::Contract(receiver_contract.clone())),
-        0
-    );
+    assert_eq!(res, Err(Ok(Error::GenericRepay)));
+
+    assert_eq!(token.balance(&Identifier::Contract(receiver_contract)), 0);
 
     assert_eq!(
-        token.balance(&Identifier::Contract(contract_id.clone())),
+        token.balance(&Identifier::Contract(contract_id)),
         1000000000
     );
 }
 
 mod flash_loan_receiver_standard {
+    use super::BalIncrementClient;
+    use crate::token::{self, Signature};
     use soroban_auth::Identifier;
     use soroban_sdk::{bigint, contractimpl, BigInt, BytesN, Env};
-
-    use crate::token::{self, Signature};
-
-    use super::BalIncrementClient;
-
     pub struct FlashLoanReceiver;
-    pub struct FlashLoanReceiverFail;
 
     fn compute_fee(e: &Env, amount: &BigInt) -> BigInt {
         bigint!(e, 5) * amount / 10000 // 0.05%, still TBD

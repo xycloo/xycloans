@@ -1,14 +1,10 @@
-use core::clone;
-
-use soroban_auth::{Identifier, Signature};
+use soroban_auth::Identifier;
 use soroban_sdk::{contractimpl, BigInt, BytesN, Env};
 
 use crate::{
     types::{DataKey, Error},
     utils::{invoke_receiver, try_repay, vault_xfer},
 };
-
-pub const STROOP_SCAL: u32 = 1000000;
 
 pub struct FlashLoansContract;
 
