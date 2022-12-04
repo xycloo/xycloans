@@ -828,8 +828,6 @@ version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9218b5b9e66c664000e87750ad8199cd7e94b37afb592b079183cc9619aaba9e"
 dependencies = [
- "ed25519-dalek",
- "rand 0.7.3",
  "soroban-sdk",
 ]
 
@@ -893,22 +891,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "soroban-flash-loan-receiver-standard"
-version = "0.0.0"
-dependencies = [
- "soroban-auth",
- "soroban-sdk",
-]
-
-[[package]]
-name = "soroban-flash-loans-prototype"
-version = "0.0.0"
-dependencies = [
- "soroban-auth",
- "soroban-sdk",
-]
-
-[[package]]
 name = "soroban-native-sdk-macros"
 version = "0.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -927,7 +909,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "541d2e344e84c26342b086b761679c88fd88987fe86a1f0fa60a7bf70dbcc9c4"
 dependencies = [
  "bytes-lit",
- "ed25519-dalek",
  "rand 0.8.5",
  "soroban-env-guest",
  "soroban-env-host",

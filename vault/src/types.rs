@@ -4,18 +4,19 @@ use soroban_sdk::{contracterror, contracttype};
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
-pub enum Error {
+pub enum VaultError {
     Generic = 1,
-    ContractAlreadyInitialized = 2,
-    GenericLend = 3,
-    GenericRepay = 4,
+    NotAdmin = 2,
+    SharesExceeded = 3,
 }
 
-#[contracttype]
 #[derive(Clone)]
+#[contracttype]
 pub enum DataKey {
     TokenId,
-    VaultId,
-    Deposit(Identifier),
+    Admin,
+    TotSupply,
+    MaxSupply,
+    Balance(Identifier),
     Nonce(Identifier),
 }

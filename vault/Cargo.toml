@@ -1,5 +1,5 @@
 [package]
-name = "soroban-flash-loan-receiver-standard"
+name = "soroban-vault"
 version = "0.0.0"
 edition = "2021"
 publish = false
@@ -8,9 +8,10 @@ publish = false
 crate-type = ["cdylib"]
 
 [dependencies]
-soroban-sdk = "0.2.1"
-soroban-auth = "0.2.1"
+soroban-sdk = "0.2.0"
+soroban-auth = "0.2.0"
 
 [dev_dependencies]
 soroban-sdk = { version = "0.2.1" }
 soroban-auth = { version = "0.2.1" }
+rand = { version = "0.7.3" }

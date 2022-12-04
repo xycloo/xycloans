@@ -12,5 +12,5 @@ soroban-sdk = "0.2.1"
 soroban-auth = "0.2.1"
 
 [dev_dependencies]
-soroban-sdk = { version = "0.2.1", features = ["testutils"] }
-soroban-auth = { version = "0.2.1", features = ["testutils"] }
+soroban-sdk = { version = "0.2.1", features=["testutils"] }
+soroban-auth = { version = "0.2.1", features=["testutils"] }
