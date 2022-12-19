@@ -18,4 +18,5 @@ pub enum DataKey {
     VaultId,
     Deposit(Identifier),
     Nonce(Identifier),
+    LP,
 }

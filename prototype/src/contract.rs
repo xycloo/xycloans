@@ -1,13 +1,14 @@
 use soroban_auth::{verify, Identifier, Signature};
-use soroban_sdk::{contractimpl, symbol, BigInt, BytesN, Env};
+use soroban_sdk::{contractimpl, symbol, BytesN, Env};
 
 use crate::{
     types::{DataKey, Error},
     utils::{
-        get_contract_id, get_deposit, get_nonce, get_vault, invoke_receiver, is_initialized,
-        remove_deposit, set_deposit, set_token, set_vault, try_repay, vault_xfer, xfer_in_pool,
+        get_contract_id, get_lp, get_nonce, get_token_balance, has_lp, invoke_receiver,
+        is_initialized, remove_lp, set_lp, set_token, set_vault, try_repay, vault_xfer,
+        xfer_in_pool,
     },
-    vault,
+    //    vault,
 };
 
 pub struct FlashLoanCommon;
@@ -21,20 +22,20 @@ pub trait Common {
 
 pub trait Borrow {
     #[doc = "Borrow money specifyng a receiver, which should abide to the &FlashLoanReceiver standard interface"]
-    fn borrow(e: Env, receiver_id: Identifier, amount: BigInt) -> Result<(), Error>;
+    fn borrow(e: Env, receiver_id: Identifier, amount: i128) -> Result<(), Error>;
 }
 
 pub trait Lender {
-    fn prov_liq(e: Env, sig: Signature, amount: BigInt) -> Result<(), Error>;
+    fn prov_liq(e: Env, sig: Signature, amount: i128) -> Result<(), Error>;
     fn withdraw(e: Env, sig: Signature) -> Result<(), Error>;
-    fn width_fee(e: Env, sig: Signature, shares: BigInt) -> Result<(), Error>;
+    //    fn width_fee(e: Env, sig: Signature, shares: i128) -> Result<(), Error>;
 }
 
 #[contractimpl]
 impl Common for FlashLoanCommon {
     fn init(e: Env, token_id: BytesN<32>, fee_vault: BytesN<32>) -> Result<(), Error> {
         let token_key = DataKey::TokenId;
-        if e.data().has(token_key) {
+        if e.storage().has(token_key) {
             return Err(Error::ContractAlreadyInitialized);
         }
 
@@ -46,7 +47,7 @@ impl Common for FlashLoanCommon {
 
 #[contractimpl]
 impl Borrow for FlashLoanBorrow {
-    fn borrow(e: Env, receiver_id: Identifier, amount: BigInt) -> Result<(), Error> {
+    fn borrow(e: Env, receiver_id: Identifier, amount: i128) -> Result<(), Error> {
         if !is_initialized(&e) {
             return Err(Error::Generic);
         }
@@ -62,10 +63,12 @@ impl Borrow for FlashLoanBorrow {
     }
 }
 
+// Lender has to be redefined
+
 #[contractimpl]
 impl Lender for FlashLoanLender {
-    fn prov_liq(e: Env, sig: Signature, amount: BigInt) -> Result<(), Error> {
-        if !is_initialized(&e) {
+    fn prov_liq(e: Env, sig: Signature, amount: i128) -> Result<(), Error> {
+        if !is_initialized(&e) || has_lp(&e) {
             return Err(Error::Generic);
         }
 
@@ -82,54 +85,47 @@ impl Lender for FlashLoanLender {
         );
 
         xfer_in_pool(&e, &lp_id, &amount)?;
+        set_lp(&e, lp_id);
 
-        let vault_client = vault::Client::new(&e, get_vault(&e));
-        vault_client.deposit(&lp_id, &amount);
-        set_deposit(&e, lp_id, amount);
+        //        let vault_client = vault::Client::new(&e, get_vault(&e));
+        //        vault_client.deposit(&lp_id, &amount);
+        //        set_deposit(&e, lp_id, amount);
 
         Ok(())
     }
 
     fn withdraw(e: Env, sig: Signature) -> Result<(), Error> {
-        if !is_initialized(&e) {
+        if !is_initialized(&e) || !has_lp(&e) {
             return Err(Error::Generic);
         }
 
         let lp_id = sig.identifier(&e);
+
+        if lp_id != get_lp(&e) {
+            return Err(Error::Generic);
+        }
+
         verify(
             &e,
             &sig,
             symbol!("withdraw"),
-            (get_contract_id(&e), get_nonce(&e, sig.identifier(&e))),
+            (get_contract_id(&e), get_nonce(&e, lp_id.clone())),
         );
 
-        let deposit_amount = get_deposit(&e, lp_id.clone());
-        vault_xfer(&e, &lp_id, &deposit_amount)?;
+        //        let deposit_amount = get_deposit(&e, lp_id.clone());
+        //        vault_xfer(&e, &lp_id, &deposit_amount)?;
 
-        let vault_client = vault::Client::new(&e, get_vault(&e));
-        let fee_shares = vault_client.get_shares(&lp_id);
-        vault_client.withd_fee(&lp_id, &fee_shares);
-        remove_deposit(&e, lp_id);
+        //        let vault_client = vault::Client::new(&e, get_vault(&e));
+        //        let fee_shares = vault_client.get_shares(&lp_id);
+        //        vault_client.withd_fee(&lp_id, &fee_shares);
+        //        remove_deposit(&e, lp_id);
+
+        let amount = get_token_balance(&e);
+        vault_xfer(&e, &lp_id, &amount)?;
+        remove_lp(&e);
 
         Ok(())
     }
 
-    fn width_fee(e: Env, sig: Signature, shares: BigInt) -> Result<(), Error> {
-        if !is_initialized(&e) {
-            return Err(Error::Generic);
-        }
-
-        let lp_id = sig.identifier(&e);
-        verify(
-            &e,
-            &sig,
-            symbol!("withd_fee"),
-            (get_contract_id(&e), get_nonce(&e, sig.identifier(&e))),
-        );
-
-        let vault_client = vault::Client::new(&e, get_vault(&e));
-        vault_client.withd_fee(&lp_id, &shares);
-
-        Ok(())
-    }
+    // fee goes directly to the LP
 }
