@@ -31,7 +31,7 @@ pub fn get_token_balance(e: &Env) -> i128 {
     client.balance(&get_contract_id(e))
 }
 
-pub fn vault_xfer(e: &Env, to: &Identifier, amount: &i128) -> Result<(), Error> {
+pub fn transfer(e: &Env, to: &Identifier, amount: &i128) -> Result<(), Error> {
     let token_id: BytesN<32> = get_token_id(e);
     let client = token::Client::new(e, token_id);
 
@@ -45,16 +45,7 @@ pub fn vault_xfer(e: &Env, to: &Identifier, amount: &i128) -> Result<(), Error> 
     }
 }
 
-pub fn try_repay(e: &Env, receiver_id: &Identifier, amount: &i128) -> Result<(), Error> {
-    let fees = compute_fee(amount);
-
-    xfer_in_pool(e, receiver_id, &(amount + fees))?;
-    vault_xfer(e, &get_lp(e), &fees)?;
-
-    Ok(())
-}
-
-pub fn xfer_in_pool(e: &Env, from: &Identifier, amount: &i128) -> Result<(), Error> {
+pub fn xfer_from_to_fl(e: &Env, from: &Identifier, amount: &i128) -> Result<(), Error> {
     let token_id: BytesN<32> = get_token_id(e);
     let client = token::Client::new(e, token_id);
 
@@ -72,6 +63,15 @@ pub fn xfer_in_pool(e: &Env, from: &Identifier, amount: &i128) -> Result<(), Err
         Ok(Err(_)) => Err(Error::GenericRepay),
         Err(_) => Err(Error::GenericRepay),
     }
+}
+
+pub fn try_repay(e: &Env, receiver_id: &Identifier, amount: &i128) -> Result<(), Error> {
+    let fees = compute_fee(amount);
+
+    xfer_from_to_fl(e, receiver_id, &(amount + fees))?;
+    transfer(e, &get_lp(e), &fees)?;
+
+    Ok(())
 }
 
 pub fn invoke_receiver(e: &Env, id: &BytesN<32>) {

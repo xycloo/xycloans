@@ -5,7 +5,7 @@ use crate::{
     types::{DataKey, Error},
     utils::{
         get_contract_id, get_lp, get_nonce, get_token_balance, has_lp, invoke_receiver,
-        is_initialized, remove_lp, set_lp, set_token, try_repay, vault_xfer, xfer_in_pool,
+        is_initialized, remove_lp, set_lp, set_token, transfer, try_repay, xfer_from_to_fl,
     },
 };
 
@@ -49,7 +49,7 @@ impl Borrow for FlashLoanBorrow {
         }
 
         if let Identifier::Contract(receiver_id_bytes) = &receiver_id {
-            vault_xfer(&e, &receiver_id, &amount)?;
+            transfer(&e, &receiver_id, &amount)?;
             invoke_receiver(&e, receiver_id_bytes);
             try_repay(&e, &receiver_id, &amount)?;
             Ok(())
@@ -80,7 +80,7 @@ impl Lender for FlashLoanLender {
             ),
         );
 
-        xfer_in_pool(&e, &lp_id, &amount)?;
+        xfer_from_to_fl(&e, &lp_id, &amount)?;
         set_lp(&e, lp_id);
 
         Ok(())
@@ -105,7 +105,7 @@ impl Lender for FlashLoanLender {
         );
 
         let amount = get_token_balance(&e);
-        vault_xfer(&e, &lp_id, &amount)?;
+        transfer(&e, &lp_id, &amount)?;
         remove_lp(&e);
 
         Ok(())
