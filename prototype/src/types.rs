@@ -15,8 +15,6 @@ pub enum Error {
 #[derive(Clone)]
 pub enum DataKey {
     TokenId,
-    VaultId,
-    Deposit(Identifier),
     Nonce(Identifier),
     LP,
 }

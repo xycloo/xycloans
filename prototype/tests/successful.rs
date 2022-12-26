@@ -21,12 +21,6 @@ mod loan_ctr {
     );
 }
 
-mod vault_ctr {
-    //    use soroban_sdk::contractimport;
-
-    //    contractimport!(file = "../target/wasm32-unknown-unknown/release/soroban_vault.wasm");
-}
-
 mod receiver_interface {
     use soroban_sdk::contractimport;
 
@@ -50,19 +44,15 @@ fn test_successful_borrow() {
     let u1 = env.accounts().generate();
     let lp1 = env.accounts().generate();
 
-    let contract_id =
+    let flash_loan_contract_id =
         env.register_contract_wasm(&BytesN::from_array(&env, &[5; 32]), loan_ctr::WASM);
-    let flash_loan_client = loan_ctr::Client::new(&env, &contract_id);
+    let flash_loan_client = loan_ctr::Client::new(&env, &flash_loan_contract_id);
 
     let increment_contract =
         env.register_contract(&BytesN::from_array(&env, &[2; 32]), BalIncrement);
 
     let receiver_contract =
         env.register_contract(None, crate::flash_loan_receiver_standard::FlashLoanReceiver);
-
-    //    let vault_contract =
-    //        env.register_contract_wasm(&BytesN::from_array(&env, &[13; 32]), vault_ctr::WASM);
-    //    let vault_client = vault_ctr::Client::new(&env, &vault_contract);
 
     let id = env.register_contract_token(&BytesN::from_array(
         &env,
@@ -96,15 +86,14 @@ fn test_successful_borrow() {
         &1000000000,
     );
 
+    flash_loan_client.init(&id);
+
     token.with_source_account(&lp1).approve(
         &Signature::Invoker,
         &0,
-        &Identifier::Contract(contract_id.clone()),
+        &Identifier::Contract(flash_loan_contract_id.clone()),
         &1000000000,
     );
-
-    //    vault_client.initialize(&Identifier::Contract(contract_id.clone()), &id, &None);
-    flash_loan_client.init(&id, &contract_id);
 
     flash_loan_client
         .with_source_account(&lp1)
@@ -117,36 +106,13 @@ fn test_successful_borrow() {
         50
     );
     assert_eq!(
-        token.balance(&Identifier::Contract(contract_id.clone())),
+        token.balance(&Identifier::Contract(flash_loan_contract_id.clone())),
         1000000000
     );
-
-    /*
-        flash_loan_client
-            .with_source_account(&lp1)
-            .width_fee(&Signature::Invoker, &500000000);
-
-        assert_eq!(
-            token.balance(&Identifier::Contract(vault_contract.clone())),
-            25
-        );
-        assert_eq!(token.balance(&Identifier::Account(lp1.clone())), 25);
-
-        flash_loan_client
-            .with_source_account(&lp1)
-            .withdraw(&Signature::Invoker);
-
-    */
-
-    //    assert_eq!(token.balance(&Identifier::Contract(vault_contract)), 0);
     assert_eq!(token.balance(&Identifier::Account(lp1.clone())), 50);
     assert_eq!(
-        token.balance(&Identifier::Contract(contract_id.clone())),
+        token.balance(&Identifier::Contract(flash_loan_contract_id.clone())),
         1000000000
-    );
-    assert_eq!(
-        token.balance(&Identifier::Contract(receiver_contract.clone())),
-        50
     );
     assert_eq!(token.balance(&Identifier::Account(u1.clone())), 0);
 
@@ -155,7 +121,10 @@ fn test_successful_borrow() {
         .withdraw(&Signature::Invoker);
 
     assert_eq!(token.balance(&Identifier::Account(lp1)), 1000000000 + 50);
-    assert_eq!(token.balance(&Identifier::Contract(contract_id)), 0);
+    assert_eq!(
+        token.balance(&Identifier::Contract(flash_loan_contract_id)),
+        0
+    );
     assert_eq!(token.balance(&Identifier::Contract(receiver_contract)), 50);
     assert_eq!(token.balance(&Identifier::Account(u1)), 0);
 }

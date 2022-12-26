@@ -5,10 +5,8 @@ use crate::{
     types::{DataKey, Error},
     utils::{
         get_contract_id, get_lp, get_nonce, get_token_balance, has_lp, invoke_receiver,
-        is_initialized, remove_lp, set_lp, set_token, set_vault, try_repay, vault_xfer,
-        xfer_in_pool,
+        is_initialized, remove_lp, set_lp, set_token, try_repay, vault_xfer, xfer_in_pool,
     },
-    //    vault,
 };
 
 pub struct FlashLoanCommon;
@@ -17,7 +15,7 @@ pub struct FlashLoanLender;
 
 pub trait Common {
     #[doc = "Initializes the contract. @dev specify: [the token to use, ]"]
-    fn init(e: Env, token_id: BytesN<32>, fee_vault: BytesN<32>) -> Result<(), Error>;
+    fn init(e: Env, token_id: BytesN<32>) -> Result<(), Error>;
 }
 
 pub trait Borrow {
@@ -28,19 +26,17 @@ pub trait Borrow {
 pub trait Lender {
     fn prov_liq(e: Env, sig: Signature, amount: i128) -> Result<(), Error>;
     fn withdraw(e: Env, sig: Signature) -> Result<(), Error>;
-    //    fn width_fee(e: Env, sig: Signature, shares: i128) -> Result<(), Error>;
 }
 
 #[contractimpl]
 impl Common for FlashLoanCommon {
-    fn init(e: Env, token_id: BytesN<32>, fee_vault: BytesN<32>) -> Result<(), Error> {
+    fn init(e: Env, token_id: BytesN<32>) -> Result<(), Error> {
         let token_key = DataKey::TokenId;
         if e.storage().has(token_key) {
             return Err(Error::ContractAlreadyInitialized);
         }
 
         set_token(&e, token_id);
-        set_vault(&e, fee_vault);
         Ok(())
     }
 }
@@ -87,10 +83,6 @@ impl Lender for FlashLoanLender {
         xfer_in_pool(&e, &lp_id, &amount)?;
         set_lp(&e, lp_id);
 
-        //        let vault_client = vault::Client::new(&e, get_vault(&e));
-        //        vault_client.deposit(&lp_id, &amount);
-        //        set_deposit(&e, lp_id, amount);
-
         Ok(())
     }
 
@@ -112,20 +104,10 @@ impl Lender for FlashLoanLender {
             (get_contract_id(&e), get_nonce(&e, lp_id.clone())),
         );
 
-        //        let deposit_amount = get_deposit(&e, lp_id.clone());
-        //        vault_xfer(&e, &lp_id, &deposit_amount)?;
-
-        //        let vault_client = vault::Client::new(&e, get_vault(&e));
-        //        let fee_shares = vault_client.get_shares(&lp_id);
-        //        vault_client.withd_fee(&lp_id, &fee_shares);
-        //        remove_deposit(&e, lp_id);
-
         let amount = get_token_balance(&e);
         vault_xfer(&e, &lp_id, &amount)?;
         remove_lp(&e);
 
         Ok(())
     }
-
-    // fee goes directly to the LP
 }

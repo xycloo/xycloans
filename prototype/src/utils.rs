@@ -15,14 +15,6 @@ pub fn set_token(e: &Env, id: BytesN<32>) {
     e.storage().set(DataKey::TokenId, id);
 }
 
-pub fn _get_vault(e: &Env) -> BytesN<32> {
-    e.storage().get(DataKey::VaultId).unwrap().unwrap()
-}
-
-pub fn set_vault(e: &Env, id: BytesN<32>) {
-    e.storage().set(DataKey::VaultId, id);
-}
-
 fn compute_fee(amount: &i128) -> i128 {
     5 * amount / 10000 // 0.05%, still TBD
 }
@@ -93,23 +85,6 @@ pub fn get_nonce(e: &Env, id: Identifier) -> i128 {
 
 pub fn get_contract_id(e: &Env) -> Identifier {
     Identifier::Contract(e.get_current_contract())
-}
-
-pub fn _get_deposit(e: &Env, id: Identifier) -> i128 {
-    let key = DataKey::Deposit(id);
-    e.storage().get(key).unwrap_or(Ok(0)).unwrap()
-}
-
-pub fn _set_deposit(e: &Env, id: Identifier, amount: i128) {
-    let current_deposit = _get_deposit(e, id.clone());
-    let key = DataKey::Deposit(id);
-
-    e.storage().set(key, current_deposit + amount);
-}
-
-pub fn _remove_deposit(e: &Env, id: Identifier) {
-    let key = DataKey::Deposit(id);
-    e.storage().remove(key);
 }
 
 pub fn has_lp(e: &Env) -> bool {

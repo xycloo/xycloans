@@ -3,7 +3,7 @@ resolver = "2"
 members = [
     "prototype",
     "loan-receiver-standard",
-    "vault",
+    "examples/simple",
 ]
 
 [profile.release-with-logs]
@@ -19,3 +19,14 @@ debug-assertions = false
 panic = "abort"
 codegen-units = 1
 lto = true
+
+
+[workspace.dependencies.soroban-sdk]
+version = "0.3.2"
+git = "https://github.com/stellar/rs-soroban-sdk"
+rev = "e2ecbee"
+
+[workspace.dependencies.soroban-auth]
+version = "0.3.2"
+git = "https://github.com/stellar/rs-soroban-sdk"
+rev = "e2ecbee"
