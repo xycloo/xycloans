@@ -118,12 +118,12 @@ fn test_successful_borrow() {
 
     flash_loan_client
         .with_source_account(&lp1)
-        .withdraw(&Signature::Invoker);
+        .withdraw(&Signature::Invoker, &500000000);
 
-    assert_eq!(token.balance(&Identifier::Account(lp1)), 1000000000 + 50);
+    assert_eq!(token.balance(&Identifier::Account(lp1)), 500000000 + 50);
     assert_eq!(
         token.balance(&Identifier::Contract(flash_loan_contract_id)),
-        0
+        500000000
     );
     assert_eq!(token.balance(&Identifier::Contract(receiver_contract)), 50);
     assert_eq!(token.balance(&Identifier::Account(u1)), 0);

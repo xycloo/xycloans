@@ -25,7 +25,7 @@ pub trait Borrow {
 
 pub trait Lender {
     fn prov_liq(e: Env, sig: Signature, amount: i128) -> Result<(), Error>;
-    fn withdraw(e: Env, sig: Signature) -> Result<(), Error>;
+    fn withdraw(e: Env, sig: Signature, amount: i128) -> Result<(), Error>;
 }
 
 #[contractimpl]
@@ -86,7 +86,7 @@ impl Lender for FlashLoanLender {
         Ok(())
     }
 
-    fn withdraw(e: Env, sig: Signature) -> Result<(), Error> {
+    fn withdraw(e: Env, sig: Signature, amount: i128) -> Result<(), Error> {
         if !is_initialized(&e) || !has_lp(&e) {
             return Err(Error::Generic);
         }
@@ -104,7 +104,7 @@ impl Lender for FlashLoanLender {
             (get_contract_id(&e), get_nonce(&e, lp_id.clone())),
         );
 
-        let amount = get_token_balance(&e);
+        // let amount = get_token_balance(&e);
         transfer(&e, &lp_id, &amount)?;
         remove_lp(&e);
 
