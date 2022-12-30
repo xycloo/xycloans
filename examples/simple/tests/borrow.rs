@@ -12,7 +12,7 @@ mod loan_ctr {
     use soroban_sdk::contractimport;
 
     contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/soroban_flash_loans_prototype.wasm"
+        file = "../../target/wasm32-unknown-unknown/release-with-logs/soroban_flash_loans_prototype.wasm"
     );
 }
 
@@ -66,14 +66,14 @@ fn test_successful_borrow() {
         &Identifier::Account(lp1.clone()),
         &1000000000,
     );
-    token.with_source_account(&lp1).approve(
+    token.with_source_account(&lp1).xfer(
         &Signature::Invoker,
         &0,
         &Identifier::Contract(flash_loan_contract_id.clone()),
         &1000000000,
     );
 
-    flash_loan_client.init(&id);
+    flash_loan_client.init(&id, &Identifier::Account(lp1.clone()));
     flash_loan_client
         .with_source_account(&lp1)
         .prov_liq(&Signature::Invoker, &1000000000);
@@ -108,6 +108,7 @@ fn test_successful_borrow() {
 }
 
 #[test]
+#[should_panic]
 fn test_unsuccessful_borrow() {
     let env = Env::default();
 
@@ -142,17 +143,17 @@ fn test_unsuccessful_borrow() {
         &Identifier::Account(lp1.clone()),
         &1000000000,
     );
-    token.with_source_account(&lp1).approve(
+    token.with_source_account(&lp1).xfer(
         &Signature::Invoker,
         &0,
         &Identifier::Contract(flash_loan_contract_id.clone()),
         &1000000000,
     );
 
-    flash_loan_client.init(&id);
-    flash_loan_client
-        .with_source_account(&lp1)
-        .prov_liq(&Signature::Invoker, &1000000000);
+    flash_loan_client.init(&id, &Identifier::Account(lp1.clone()));
+    //    flash_loan_client
+    //        .with_source_account(&lp1)
+    //        .prov_liq(&Signature::Invoker, &1000000000);
 
     // End of liquidity provider setup & invocations.
 

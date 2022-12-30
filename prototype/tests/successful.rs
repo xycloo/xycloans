@@ -88,7 +88,7 @@ fn test_successful_borrow() {
 
     flash_loan_client.init(&id, &Identifier::Account(lp1.clone()));
 
-    token.with_source_account(&lp1).approve(
+    token.with_source_account(&lp1).xfer(
         &Signature::Invoker,
         &0,
         &Identifier::Contract(flash_loan_contract_id.clone()),
@@ -116,9 +116,11 @@ fn test_successful_borrow() {
     );
     assert_eq!(token.balance(&Identifier::Account(u1.clone())), 0);
 
-    flash_loan_client
-        .with_source_account(&lp1)
-        .withdraw(&Signature::Invoker, &500000000);
+    flash_loan_client.with_source_account(&lp1).withdraw(
+        &Signature::Invoker,
+        &500000000,
+        &Identifier::Account(lp1.clone()),
+    );
 
     assert_eq!(token.balance(&Identifier::Account(lp1)), 500000000 + 50);
     assert_eq!(
