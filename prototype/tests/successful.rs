@@ -86,7 +86,7 @@ fn test_successful_borrow() {
         &1000000000,
     );
 
-    flash_loan_client.init(&id);
+    flash_loan_client.init(&id, &Identifier::Account(lp1.clone()));
 
     token.with_source_account(&lp1).approve(
         &Signature::Invoker,

@@ -15,7 +15,7 @@ pub struct FlashLoanLender;
 
 pub trait Common {
     #[doc = "Initializes the contract. @dev specify: [the token to use, ]"]
-    fn init(e: Env, token_id: BytesN<32>) -> Result<(), Error>;
+    fn init(e: Env, token_id: BytesN<32>, lp: Identifier) -> Result<(), Error>;
 }
 
 pub trait Borrow {
@@ -25,18 +25,19 @@ pub trait Borrow {
 
 pub trait Lender {
     fn prov_liq(e: Env, sig: Signature, amount: i128) -> Result<(), Error>;
-    fn withdraw(e: Env, sig: Signature, amount: i128) -> Result<(), Error>;
+    fn withdraw(e: Env, sig: Signature, amount: i128, to: Identifier) -> Result<(), Error>;
 }
 
 #[contractimpl]
 impl Common for FlashLoanCommon {
-    fn init(e: Env, token_id: BytesN<32>) -> Result<(), Error> {
+    fn init(e: Env, token_id: BytesN<32>, lp: Identifier) -> Result<(), Error> {
         let token_key = DataKey::TokenId;
         if e.storage().has(token_key) {
             return Err(Error::ContractAlreadyInitialized);
         }
 
         set_token(&e, token_id);
+        set_lp(&e, lp);
         Ok(())
     }
 }
@@ -64,11 +65,16 @@ impl Borrow for FlashLoanBorrow {
 #[contractimpl]
 impl Lender for FlashLoanLender {
     fn prov_liq(e: Env, sig: Signature, amount: i128) -> Result<(), Error> {
-        if !is_initialized(&e) || has_lp(&e) {
+        if !is_initialized(&e) || !has_lp(&e) {
             return Err(Error::Generic);
         }
 
         let lp_id = sig.identifier(&e);
+
+        if lp_id != get_lp(&e) {
+            return Err(Error::Generic);
+        }
+
         verify(
             &e,
             &sig,
@@ -80,13 +86,12 @@ impl Lender for FlashLoanLender {
             ),
         );
 
-        xfer_from_to_fl(&e, &lp_id, &amount)?;
-        set_lp(&e, lp_id);
+        //        xfer_from_to_fl(&e, &lp_id, &amount)?;
 
         Ok(())
     }
 
-    fn withdraw(e: Env, sig: Signature, amount: i128) -> Result<(), Error> {
+    fn withdraw(e: Env, sig: Signature, amount: i128, to: Identifier) -> Result<(), Error> {
         if !is_initialized(&e) || !has_lp(&e) {
             return Err(Error::Generic);
         }
@@ -105,8 +110,8 @@ impl Lender for FlashLoanLender {
         );
 
         // let amount = get_token_balance(&e);
-        transfer(&e, &lp_id, &amount)?;
-        remove_lp(&e);
+        transfer(&e, &to, &amount)?;
+        //        remove_lp(&e);
 
         Ok(())
     }

@@ -4,6 +4,7 @@ members = [
     "prototype",
     "loan-receiver-standard",
     "examples/simple",
+    "vault"
 ]
 
 [profile.release-with-logs]
