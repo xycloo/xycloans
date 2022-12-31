@@ -4,8 +4,8 @@ use soroban_sdk::{contractimpl, symbol, BytesN, Env};
 use crate::{
     types::{DataKey, Error},
     utils::{
-        get_contract_id, get_lp, get_nonce, get_token_balance, has_lp, invoke_receiver,
-        is_initialized, remove_lp, set_lp, set_token, transfer, try_repay, xfer_from_to_fl,
+        get_contract_id, get_lp, get_nonce, has_lp, invoke_receiver, is_initialized, set_lp,
+        set_token, transfer, try_repay,
     },
 };
 
@@ -60,8 +60,6 @@ impl Borrow for FlashLoanBorrow {
     }
 }
 
-// Lender has to be redefined
-
 #[contractimpl]
 impl Lender for FlashLoanLender {
     fn prov_liq(e: Env, sig: Signature, amount: i128) -> Result<(), Error> {
@@ -86,8 +84,6 @@ impl Lender for FlashLoanLender {
             ),
         );
 
-        //        xfer_from_to_fl(&e, &lp_id, &amount)?;
-
         Ok(())
     }
 
@@ -109,9 +105,7 @@ impl Lender for FlashLoanLender {
             (get_contract_id(&e), get_nonce(&e, lp_id.clone())),
         );
 
-        // let amount = get_token_balance(&e);
         transfer(&e, &to, &amount)?;
-        //        remove_lp(&e);
 
         Ok(())
     }

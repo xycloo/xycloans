@@ -24,7 +24,7 @@ pub fn get_token_id(e: &Env) -> BytesN<32> {
     e.storage().get(DataKey::TokenId).unwrap().unwrap()
 }
 
-pub fn get_token_balance(e: &Env) -> i128 {
+pub fn _get_token_balance(e: &Env) -> i128 {
     let token_id: BytesN<32> = get_token_id(e);
     let client = token::Client::new(e, token_id);
 
@@ -99,6 +99,6 @@ pub fn get_lp(e: &Env) -> Identifier {
     e.storage().get(DataKey::LP).unwrap().unwrap()
 }
 
-pub fn remove_lp(e: &Env) {
+pub fn _remove_lp(e: &Env) {
     e.storage().remove(DataKey::LP)
 }
