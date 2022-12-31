@@ -1,1 +1,1 @@
-# Xycloans proxy contract
+# XycLoans proxy contract

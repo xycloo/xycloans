@@ -1,1 +1,1 @@
-# Building with Xycloans Example
+# Building with XycLoans Example

@@ -1,1 +1,1 @@
-# FlashLoan Receiver Standard
+# XycLoan FlashLoan Receiver Standard

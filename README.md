@@ -1,1 +1,1 @@
-# Xycloans Protocol
+# XycLoans Protocol
