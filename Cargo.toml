@@ -4,7 +4,8 @@ members = [
     "prototype",
     "loan-receiver-standard",
     "examples/simple",
-    "fl-vault"
+    "fl-vault",
+    "proxy",
 ]
 
 [profile.release-with-logs]
