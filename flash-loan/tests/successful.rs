@@ -95,10 +95,10 @@ fn test_successful_borrow() {
         &1000000000,
     );
 
-    flash_loan_client
-        .with_source_account(&lp1)
-        .prov_liq(&Signature::Invoker, &1000000000);
-
+    /*    flash_loan_client
+            .with_source_account(&lp1)
+            .prov_liq(&Signature::Invoker, &1000000000);
+    */
     flash_loan_client.borrow(&Identifier::Contract(receiver_contract.clone()), &100000);
 
     assert_eq!(

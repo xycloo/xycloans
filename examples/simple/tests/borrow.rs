@@ -74,10 +74,10 @@ fn test_successful_borrow() {
     );
 
     flash_loan_client.init(&id, &Identifier::Account(lp1.clone()));
-    flash_loan_client
-        .with_source_account(&lp1)
-        .prov_liq(&Signature::Invoker, &1000000000);
-
+    /*    flash_loan_client
+            .with_source_account(&lp1)
+            .prov_liq(&Signature::Invoker, &1000000000);
+    */
     // End of liquidity provider setup & invocations.
 
     // Beginning of "developer invocations"
