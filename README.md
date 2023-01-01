@@ -51,7 +51,7 @@ The vault has three key functionalities:
 
 When a provider makes a deposit, the deposited amount ($a$) will go to the flash loan's balance. Additionally, the vault will mint fee shares to the provider with the following formula:
 
-\[ s = \frac{a \cdot S}{B} \]
+$$ s = \frac{a \cdot S}{B} $$
 
 Where:
 - $s$ is the amount of fee shares to mint.
@@ -67,7 +67,7 @@ As a result, a provider can withdraw only a portion of a batch's fees, get new s
 
 When a provider withdraws a certain amount of fee shares $s$ the fees to send to the provider are calculated with:
 
-\[ a_{fees} = \frac{B \cdot s}{S} - D \cdot \frac{s}{s_{initial}} \]
+$$ a_{fees} = \frac{B \cdot s}{S} - D \cdot \frac{s}{s_{initial}} $$
 
 Where:
 - $D$ is the batch's deposit amount.
@@ -75,7 +75,7 @@ Where:
 
 After the calculated portion of calculated fees is sent to the provider, the vault mints new shares to the provider in a new batch. The minted amount of shares is calculated with:
 
-\[ s = \frac{D \cdot s_{burned} \cdot S}{B \cdot s_{initial}- D \cdot s_{burned}} \]
+$$ s = \frac{D \cdot s_{burned} \cdot S}{B \cdot s_{initial}- D \cdot s_{burned}} $$
 
 #### Withdrawing the liquidity position
 
