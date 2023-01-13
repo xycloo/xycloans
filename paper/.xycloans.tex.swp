@@ -182,7 +182,7 @@ Once the liquidity provider has burned \( n \) fee shares, they should still be 
 
 \
 
-This is accomplished by minting a new batch \(k\), where its deposit is calculated with (3) and its initial shares are calculated with (4).
+This is accomplished by minting a new batch \(k\), where its deposit is calculated with (4) and its initial shares are calculated with (5).
 
 \begin{equation}
 D_{k} = D \cdot \frac{n}{i}
