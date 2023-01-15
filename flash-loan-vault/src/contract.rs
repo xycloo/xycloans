@@ -8,19 +8,14 @@ use soroban_auth::{Identifier, Signature};
 use soroban_sdk::{contractimpl, log, BytesN, Env, Vec};
 
 pub trait VaultContractTrait {
-    // Sets the admin and the vault's token id
     fn initialize(e: Env, admin: Identifier, token_id: BytesN<32>, flash_loan: BytesN<32>);
 
-    // Returns the nonce for the admin
     fn nonce(e: Env) -> i128;
 
-    // deposit shares into the vault: mints the vault shares to "from"
     fn deposit(e: Env, from: Identifier, amount: i128) -> u64;
 
-    /// withdraw fees
     fn fee_withd(e: Env, to: Identifier, batch_ts: u64, shares: i128);
 
-    // get vault shares for a user
     fn get_shares(e: Env, id: Identifier, batch_ts: u64) -> BatchObj;
 
     fn batches(e: Env, id: Identifier) -> Vec<u64>;
@@ -111,8 +106,6 @@ impl VaultContractTrait for VaultContract {
             let new_tot_supply = get_tot_supply(&e);
             let new_tot_bal = get_token_balance(&e);
 
-            //        if curr_s != shares {
-
             if tot_bal != new_deposit {
                 let new_shares = (new_deposit * new_tot_supply) / (new_tot_bal - new_deposit);
                 mint_shares(&e, to, new_shares, new_deposit);
@@ -121,8 +114,6 @@ impl VaultContractTrait for VaultContract {
                 mint_shares(&e, to, new_shares, new_deposit);
             }
         }
-
-        //log!(&e, "new dep: {}, new shares:", new_deposit.clone(),);
     }
 
     fn withdraw(e: Env, to: Identifier) -> i128 {
@@ -155,7 +146,6 @@ impl VaultContractTrait for VaultContract {
             temp_balance -= fee_amount;
             temp_supply -= curr_s;
 
-            //            transfer(&e, to.clone(), fee_amount);
             burn_shares(&e, to.clone(), curr_s, batch_ts);
 
             if temp_balance != new_deposit {

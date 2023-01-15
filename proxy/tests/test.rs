@@ -131,6 +131,5 @@ fn workflow() {
         &100,
     );
 
-    //flash_loan_client.borrow(&Identifier::Contract(receiver_contract), &100000);
     proxy_client.borrow(&token_id, &100000, &receiver_contract);
 }

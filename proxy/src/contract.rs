@@ -27,6 +27,7 @@ pub trait AdminTrait {
 }
 
 pub trait LPTrait {
+    /// Deposit liquidity into an existing vault
     fn deposit(
         env: Env,
         sig: Signature,
@@ -34,6 +35,7 @@ pub trait LPTrait {
         amount: i128,
     ) -> Result<(), Error>;
 
+    /// Withdraw fees for a certain amount of shares of a batch
     fn fee_width(
         env: Env,
         sig: Signature,
@@ -44,6 +46,7 @@ pub trait LPTrait {
 }
 
 pub trait BorrowTraait {
+    /// Borrow an `amount` of a token through a flash loan
     fn borrow(
         env: Env,
         token_contract_id: BytesN<32>,
