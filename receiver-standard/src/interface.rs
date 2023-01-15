@@ -11,7 +11,7 @@ pub struct FlashLoanReceiver;
 
 #[contractimpl]
 impl FlashLoanReceiverTrait for FlashLoanReceiver {
-    fn exec_op(env: Env) -> Result<(), ReceiverError> {
-        Ok(())
+    fn exec_op(_env: Env) -> Result<(), ReceiverError> {
+        unimplemented!()
     }
 }

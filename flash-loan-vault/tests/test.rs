@@ -9,24 +9,20 @@ mod token {
 mod vault {
     use soroban_sdk::contractimport;
 
-    contractimport!(
-        file = "../target/wasm32-unknown-unknown/release-with-logs/flash_loan_vault.wasm"
-    );
+    contractimport!(file = "../target/wasm32-unknown-unknown/release/flash_loan_vault.wasm");
 }
 
 mod loan_ctr {
     use soroban_sdk::contractimport;
 
-    contractimport!(
-        file = "../target/wasm32-unknown-unknown/release/soroban_flash_loans_prototype.wasm"
-    );
+    contractimport!(file = "../target/wasm32-unknown-unknown/release/flash_loan.wasm");
 }
 
 //use crate::{VaultContract, VaultContractClient};
 use soroban_auth::{Identifier, Signature};
 use soroban_sdk::testutils::Logger;
 use soroban_sdk::testutils::{Ledger, LedgerInfo};
-use soroban_sdk::{log, testutils::Accounts, AccountId, BytesN, Env, IntoVal};
+use soroban_sdk::{testutils::Accounts, BytesN, Env, IntoVal};
 
 #[test]
 fn test() {
@@ -185,7 +181,7 @@ fn test() {
 
     vault_client.fee_withd(&user2_id, &1867369075, &500);
 
-    let batch = vault_client.get_shares(&user2_id, &1867369075);
+    let _batch = vault_client.get_shares(&user2_id, &1867369075);
 
     std::println!(
         "vault balance : {}, u1 bal : {}, u2 bal : {}",
@@ -323,7 +319,7 @@ fn test() {
         );
     }
 
-    let logs = e.logger().all();
+    let _logs = e.logger().all();
     //    std::println!("{}", logs.join("\n"));
 
     //    assert_eq!(vault_client.get_shares(&user1_id, &batch_ts), 5 as i128);

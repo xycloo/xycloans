@@ -16,9 +16,7 @@ mod token {
 mod loan_ctr {
     use soroban_sdk::contractimport;
 
-    contractimport!(
-        file = "../target/wasm32-unknown-unknown/release/soroban_flash_loans_prototype.wasm"
-    );
+    contractimport!(file = "../target/wasm32-unknown-unknown/release/flash_loan.wasm");
 }
 
 mod receiver_interface {
