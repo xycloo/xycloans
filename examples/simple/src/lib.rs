@@ -40,7 +40,7 @@ impl receiver_interface::Contract for FlashLoanReceiverContract {
 
         // Re-paying the loan + 0.05% interest
         let total_amount = 100000 + compute_fee(&100000);
-        token_client.approve(
+        token_client.incr_allow(
             &Signature::Invoker,
             &0,
             &Identifier::Contract(BytesN::from_array(&e, &[5; 32])),
