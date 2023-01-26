@@ -52,22 +52,23 @@ fn test_successful_borrow() {
     let receiver_contract =
         env.register_contract(None, crate::flash_loan_receiver_standard::FlashLoanReceiver);
 
-    let id = env.register_contract_token(&BytesN::from_array(
-        &env,
-        &[
-            78, 52, 121, 202, 209, 66, 106, 25, 193, 181, 10, 91, 46, 213, 58, 244, 217, 115, 23,
-            232, 144, 71, 210, 113, 57, 46, 203, 166, 210, 20, 155, 105,
-        ],
-    ));
+    let id = env.register_contract_wasm(
+        &BytesN::from_array(
+            &env,
+            &[
+                78, 52, 121, 202, 209, 66, 106, 25, 193, 181, 10, 91, 46, 213, 58, 244, 217, 115,
+                23, 232, 144, 71, 210, 113, 57, 46, 203, 166, 210, 20, 155, 105,
+            ],
+        ),
+        token::WASM,
+    );
     let token = token::Client::new(&env, &id);
 
-    token.init(
+    token.initialize(
         &Identifier::Account(u1.clone()),
-        &token::TokenMetadata {
-            name: "USD coin".into_val(&env),
-            symbol: "USDC".into_val(&env),
-            decimals: 7,
-        },
+        &7u32,
+        &"name".into_val(&env),
+        &"symbol".into_val(&env),
     );
 
     token.with_source_account(&u1).mint(
@@ -164,7 +165,7 @@ mod flash_loan_receiver_standard {
 
             let total_amount = 100000 + compute_fee(&100000);
 
-            token_client.approve(
+            token_client.incr_allow(
                 &Signature::Invoker,
                 &0,
                 &Identifier::Contract(BytesN::from_array(&e, &[5; 32])),

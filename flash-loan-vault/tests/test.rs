@@ -42,21 +42,22 @@ fn test() {
     let user1_id = Identifier::Account(user1.clone());
     let user2_id = Identifier::Account(user2.clone());
 
-    let token_id = e.register_contract_token(&BytesN::from_array(
-        &e,
-        &[
-            78, 52, 121, 202, 209, 66, 106, 25, 193, 181, 10, 91, 46, 213, 58, 244, 217, 115, 23,
-            232, 144, 71, 210, 113, 57, 46, 203, 166, 210, 20, 155, 105,
-        ],
-    ));
+    let token_id = e.register_contract_wasm(
+        &BytesN::from_array(
+            &e,
+            &[
+                78, 52, 121, 202, 209, 66, 106, 25, 193, 181, 10, 91, 46, 213, 58, 244, 217, 115,
+                23, 232, 144, 71, 210, 113, 57, 46, 203, 166, 210, 20, 155, 105,
+            ],
+        ),
+        token::WASM,
+    );
     let usdc_token = token::Client::new(&e, &token_id);
-    usdc_token.init(
+    usdc_token.initialize(
         &Identifier::Account(admin1.clone()),
-        &token::TokenMetadata {
-            name: "USD coin".into_val(&e),
-            symbol: "USDC".into_val(&e),
-            decimals: 7,
-        },
+        &7u32,
+        &"name".into_val(&e),
+        &"symbol".into_val(&e),
     );
 
     let vault_contract_id =
@@ -81,11 +82,11 @@ fn test() {
 
     usdc_token
         .with_source_account(&user1)
-        .approve(&Signature::Invoker, &0, &vault_id, &1000);
+        .incr_allow(&Signature::Invoker, &0, &vault_id, &1000);
 
     usdc_token
         .with_source_account(&user2)
-        .approve(&Signature::Invoker, &0, &vault_id, &1000);
+        .incr_allow(&Signature::Invoker, &0, &vault_id, &1000);
 
     vault_client.deposit(&user1_id, &500);
 

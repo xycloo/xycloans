@@ -57,22 +57,23 @@ fn workflow() {
     let lp = e.accounts().generate();
     let lp_id = Identifier::Account(lp.clone());
 
-    let token_id = e.register_contract_token(&BytesN::from_array(
-        &e,
-        &[
-            78, 52, 121, 202, 209, 66, 106, 25, 193, 181, 10, 91, 46, 213, 58, 244, 217, 115, 23,
-            232, 144, 71, 210, 113, 57, 46, 203, 166, 210, 20, 155, 105,
-        ],
-    ));
+    let token_id = e.register_contract_wasm(
+        &BytesN::from_array(
+            &e,
+            &[
+                78, 52, 121, 202, 209, 66, 106, 25, 193, 181, 10, 91, 46, 213, 58, 244, 217, 115,
+                23, 232, 144, 71, 210, 113, 57, 46, 203, 166, 210, 20, 155, 105,
+            ],
+        ),
+        token::WASM,
+    );
     let usdc_token = token::Client::new(&e, &token_id);
 
-    usdc_token.init(
+    usdc_token.initialize(
         &Identifier::Account(token_admin.clone()),
-        &token::TokenMetadata {
-            name: "USD coin".into_val(&e),
-            symbol: "USDC".into_val(&e),
-            decimals: 7,
-        },
+        &7u32,
+        &"name".into_val(&e),
+        &"symbol".into_val(&e),
     );
 
     let proxy_contract_id =
@@ -113,7 +114,7 @@ fn workflow() {
 
     usdc_token
         .with_source_account(&lp)
-        .approve(&Signature::Invoker, &0, &vault_id, &1000000);
+        .incr_allow(&Signature::Invoker, &0, &vault_id, &1000000);
 
     proxy_client
         .with_source_account(&lp)
