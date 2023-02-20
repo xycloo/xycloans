@@ -3,9 +3,9 @@ resolver = "2"
 members = [
     "flash-loan",
     "receiver-standard",
-    "examples/simple",
-    "flash-loan-vault",
-    "proxy",
+#    "examples/simple",
+#    "flash-loan-vault",
+#    "proxy",
 ]
 
 [profile.release-with-logs]
@@ -24,7 +24,7 @@ lto = true
 
 
 [workspace.dependencies.soroban-sdk]
-version = "0.4.2"
+version = "0.6.0"
 
 [workspace.dependencies.soroban-auth]
 version = "0.4.2"

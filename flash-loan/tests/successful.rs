@@ -1,11 +1,13 @@
 #![cfg(test)]
 
-use soroban_auth::{Identifier, Signature};
+//use soroban_auth::{Identifier, Signature};
 use soroban_sdk::{
     contractimpl,
-    testutils::{Accounts, Ledger, LedgerInfo},
-    BytesN, Env, IntoVal,
+    testutils::{Address as _, Ledger, LedgerInfo},
+    Address, BytesN, Env, IntoVal,
 };
+
+use crate::flash_loan_receiver_standard::FlashLoanReceiverClient;
 
 mod token {
     use soroban_sdk::contractimport;
@@ -30,100 +32,59 @@ mod receiver_interface {
 #[test]
 fn test_successful_borrow() {
     let env = Env::default();
-
+    /*
     env.ledger().set(LedgerInfo {
         timestamp: 1669726145,
         protocol_version: 1,
         sequence_number: 10,
-        network_passphrase: Default::default(),
+        network_id: Default::default(),
         base_reserve: 10,
-    });
+    });*/
 
-    let u1 = env.accounts().generate();
-    let lp1 = env.accounts().generate();
+    let u1 = Address::random(&env);
+    let lp1 = Address::random(&env);
 
-    let flash_loan_contract_id =
+    let flash_loan_contract =
         env.register_contract_wasm(&BytesN::from_array(&env, &[5; 32]), loan_ctr::WASM);
-    let flash_loan_client = loan_ctr::Client::new(&env, &flash_loan_contract_id);
+    let flash_loan_client = loan_ctr::Client::new(&env, &flash_loan_contract);
+    let flash_loan_contract_id = Address::from_contract_id(&env, &flash_loan_contract);
 
     let increment_contract =
         env.register_contract(&BytesN::from_array(&env, &[2; 32]), BalIncrement);
+    let increment_contract_id = Address::from_contract_id(&env, &increment_contract);
 
     let receiver_contract =
         env.register_contract(None, crate::flash_loan_receiver_standard::FlashLoanReceiver);
+    let receiver_contract_id = Address::from_contract_id(&env, &receiver_contract);
+    let receiver_client = FlashLoanReceiverClient::new(&env, &increment_contract);
 
-    let id = env.register_contract_wasm(
-        &BytesN::from_array(
-            &env,
-            &[
-                78, 52, 121, 202, 209, 66, 106, 25, 193, 181, 10, 91, 46, 213, 58, 244, 217, 115,
-                23, 232, 144, 71, 210, 113, 57, 46, 203, 166, 210, 20, 155, 105,
-            ],
-        ),
-        token::WASM,
-    );
+    let id = env.register_stellar_asset_contract(u1.clone());
     let token = token::Client::new(&env, &id);
 
-    token.initialize(
-        &Identifier::Account(u1.clone()),
-        &7u32,
-        &"name".into_val(&env),
-        &"symbol".into_val(&env),
-    );
+    receiver_client.init(&u1, &id);
 
-    token.with_source_account(&u1).mint(
-        &Signature::Invoker,
-        &0,
-        &Identifier::Account(lp1.clone()),
-        &1000000000,
-    );
+    token.mint(&u1, &lp1, &1000000000);
 
-    token.with_source_account(&u1).mint(
-        &Signature::Invoker,
-        &0,
-        &Identifier::Contract(increment_contract),
-        &1000000000,
-    );
+    token.mint(&u1, &increment_contract_id, &1000000000);
 
-    flash_loan_client.init(&id, &Identifier::Account(lp1.clone()));
+    flash_loan_client.init(&id, &lp1);
 
-    token.with_source_account(&lp1).xfer(
-        &Signature::Invoker,
-        &0,
-        &Identifier::Contract(flash_loan_contract_id.clone()),
-        &1000000000,
-    );
+    token.xfer(&lp1, &flash_loan_contract_id, &1000000000);
 
-    flash_loan_client.borrow(&Identifier::Contract(receiver_contract.clone()), &100000);
+    flash_loan_client.borrow(&receiver_contract_id, &receiver_contract, &100000);
 
-    assert_eq!(
-        token.balance(&Identifier::Contract(receiver_contract.clone())),
-        50
-    );
-    assert_eq!(
-        token.balance(&Identifier::Contract(flash_loan_contract_id.clone())),
-        1000000000
-    );
-    assert_eq!(token.balance(&Identifier::Account(lp1.clone())), 50);
-    assert_eq!(
-        token.balance(&Identifier::Contract(flash_loan_contract_id.clone())),
-        1000000000
-    );
-    assert_eq!(token.balance(&Identifier::Account(u1.clone())), 0);
+    assert_eq!(token.balance(&receiver_contract_id), 50);
+    assert_eq!(token.balance(&flash_loan_contract_id), 1000000000);
+    assert_eq!(token.balance(&lp1), 50);
+    assert_eq!(token.balance(&flash_loan_contract_id), 1000000000);
+    assert_eq!(token.balance(&u1), 0);
 
-    flash_loan_client.with_source_account(&lp1).withdraw(
-        &Signature::Invoker,
-        &500000000,
-        &Identifier::Account(lp1.clone()),
-    );
+    flash_loan_client.withdraw(&lp1, &500000000, &lp1);
 
-    assert_eq!(token.balance(&Identifier::Account(lp1)), 500000000 + 50);
-    assert_eq!(
-        token.balance(&Identifier::Contract(flash_loan_contract_id)),
-        500000000
-    );
-    assert_eq!(token.balance(&Identifier::Contract(receiver_contract)), 50);
-    assert_eq!(token.balance(&Identifier::Account(u1)), 0);
+    assert_eq!(token.balance(&lp1), 500000000 + 50);
+    assert_eq!(token.balance(&flash_loan_contract_id), 500000000);
+    assert_eq!(token.balance(&receiver_contract_id), 50);
+    assert_eq!(token.balance(&u1), 0);
 }
 
 mod flash_loan_receiver_standard {
@@ -131,44 +92,46 @@ mod flash_loan_receiver_standard {
 
     use super::BalIncrementClient;
 
-    use soroban_auth::{Identifier, Signature};
-    use soroban_sdk::{contractimpl, BytesN, Env};
+    use soroban_sdk::{
+        contractimpl, symbol, testutils::Address as _, Address, BytesN, Env, Symbol,
+    };
 
     pub struct FlashLoanReceiver;
+    pub struct FlashLoanReceiverExt;
 
     fn compute_fee(amount: &i128) -> i128 {
         5 * amount / 10000 // 0.05%, still TBD
     }
 
     #[contractimpl]
-    impl receiver_interface::Contract for FlashLoanReceiver {
-        fn exec_op(e: Env) -> Result<(), receiver_interface::ReceiverError> {
+    impl FlashLoanReceiver {
+        pub fn init(e: Env, admin: Address, token: BytesN<32>) {
+            admin.require_auth();
+            e.storage().set(&symbol!("token"), &token);
+        }
+
+        pub fn exec_op(e: Env) -> Result<(), receiver_interface::ReceiverError> {
             let token_client = token::Client::new(
                 &e,
-                &BytesN::from_array(
-                    &e,
-                    &[
-                        78, 52, 121, 202, 209, 66, 106, 25, 193, 181, 10, 91, 46, 213, 58, 244,
-                        217, 115, 23, 232, 144, 71, 210, 113, 57, 46, 203, 166, 210, 20, 155, 105,
-                    ],
-                ),
+                &e.storage()
+                    .get::<Symbol, BytesN<32>>(&symbol!("token"))
+                    .unwrap()
+                    .unwrap(),
             );
             let client = BalIncrementClient::new(&e, &BytesN::from_array(&e, &[2; 32]));
 
             token_client.xfer(
-                &Signature::Invoker,
-                &0,
-                &Identifier::Contract(BytesN::from_array(&e, &[2; 32])),
+                &e.current_contract_address(),
+                &Address::from_contract_id(&e, &BytesN::from_array(&e, &[2; 32])),
                 &100000,
             );
-            client.increment(&Identifier::Contract(e.current_contract()), &100000);
+            client.increment(&e.current_contract_address(), &100000);
 
             let total_amount = 100000 + compute_fee(&100000);
 
             token_client.incr_allow(
-                &Signature::Invoker,
-                &0,
-                &Identifier::Contract(BytesN::from_array(&e, &[5; 32])),
+                &e.current_contract_address(),
+                &Address::from_contract_id(&e, &BytesN::from_array(&e, &[5; 32])),
                 &total_amount,
             );
 
@@ -181,7 +144,7 @@ pub struct BalIncrement;
 
 #[contractimpl]
 impl BalIncrement {
-    pub fn increment(e: Env, id: Identifier, amount: i128) {
+    pub fn increment(e: Env, id: Address, amount: i128) {
         let token_id = BytesN::from_array(
             &e,
             &[
@@ -189,12 +152,12 @@ impl BalIncrement {
                 23, 232, 144, 71, 210, 113, 57, 46, 203, 166, 210, 20, 155, 105,
             ],
         );
-        let client = token::Client::new(&e, token_id);
+        let client = token::Client::new(&e, &token_id);
 
-        client.xfer(&Signature::Invoker, &0, &id, &(amount + 100))
+        client.xfer(&e.current_contract_address(), &id, &(amount + 100))
     }
 
-    pub fn decrement(e: Env, id: Identifier, amount: i128) {
+    pub fn decrement(e: Env, id: Address, amount: i128) {
         let token_id = BytesN::from_array(
             &e,
             &[
@@ -202,8 +165,8 @@ impl BalIncrement {
                 23, 232, 144, 71, 210, 113, 57, 46, 203, 166, 210, 20, 155, 105,
             ],
         );
-        let client = token::Client::new(&e, token_id);
+        let client = token::Client::new(&e, &token_id);
 
-        client.xfer(&Signature::Invoker, &0, &id, &(amount - 100))
+        client.xfer(&e.current_contract_address(), &id, &(amount - 100))
     }
 }
