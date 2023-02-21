@@ -2,9 +2,9 @@
 
 //use soroban_auth::{Identifier, Signature};
 use soroban_sdk::{
-    contractimpl,
+    contractimpl, symbol,
     testutils::{Address as _, Ledger, LedgerInfo},
-    Address, BytesN, Env, IntoVal,
+    Address, BytesN, Env, IntoVal, Symbol,
 };
 
 use crate::flash_loan_receiver_standard::FlashLoanReceiverClient;
@@ -52,16 +52,18 @@ fn test_successful_borrow() {
     let increment_contract =
         env.register_contract(&BytesN::from_array(&env, &[2; 32]), BalIncrement);
     let increment_contract_id = Address::from_contract_id(&env, &increment_contract);
+    let increment_client = BalIncrementClient::new(&env, &increment_contract);
 
     let receiver_contract =
         env.register_contract(None, crate::flash_loan_receiver_standard::FlashLoanReceiver);
     let receiver_contract_id = Address::from_contract_id(&env, &receiver_contract);
-    let receiver_client = FlashLoanReceiverClient::new(&env, &increment_contract);
+    let receiver_client = FlashLoanReceiverClient::new(&env, &receiver_contract);
 
     let id = env.register_stellar_asset_contract(u1.clone());
     let token = token::Client::new(&env, &id);
 
     receiver_client.init(&u1, &id);
+    increment_client.init(&u1, &id);
 
     token.mint(&u1, &lp1, &1000000000);
 
@@ -107,14 +109,14 @@ mod flash_loan_receiver_standard {
     impl FlashLoanReceiver {
         pub fn init(e: Env, admin: Address, token: BytesN<32>) {
             admin.require_auth();
-            e.storage().set(&symbol!("token"), &token);
+            e.storage().set(&symbol!("T"), &token);
         }
 
         pub fn exec_op(e: Env) -> Result<(), receiver_interface::ReceiverError> {
             let token_client = token::Client::new(
                 &e,
                 &e.storage()
-                    .get::<Symbol, BytesN<32>>(&symbol!("token"))
+                    .get::<Symbol, BytesN<32>>(&symbol!("T"))
                     .unwrap()
                     .unwrap(),
             );
@@ -144,29 +146,32 @@ pub struct BalIncrement;
 
 #[contractimpl]
 impl BalIncrement {
-    pub fn increment(e: Env, id: Address, amount: i128) {
-        let token_id = BytesN::from_array(
-            &e,
-            &[
-                78, 52, 121, 202, 209, 66, 106, 25, 193, 181, 10, 91, 46, 213, 58, 244, 217, 115,
-                23, 232, 144, 71, 210, 113, 57, 46, 203, 166, 210, 20, 155, 105,
-            ],
-        );
-        let client = token::Client::new(&e, &token_id);
+    pub fn init(e: Env, admin: Address, token: BytesN<32>) {
+        admin.require_auth();
+        e.storage().set(&symbol!("T"), &token);
+    }
 
-        client.xfer(&e.current_contract_address(), &id, &(amount + 100))
+    pub fn increment(e: Env, id: Address, amount: i128) {
+        let token_client = token::Client::new(
+            &e,
+            &e.storage()
+                .get::<Symbol, BytesN<32>>(&symbol!("T"))
+                .unwrap()
+                .unwrap(),
+        );
+
+        token_client.xfer(&e.current_contract_address(), &id, &(amount + 100))
     }
 
     pub fn decrement(e: Env, id: Address, amount: i128) {
-        let token_id = BytesN::from_array(
+        let token_client = token::Client::new(
             &e,
-            &[
-                78, 52, 121, 202, 209, 66, 106, 25, 193, 181, 10, 91, 46, 213, 58, 244, 217, 115,
-                23, 232, 144, 71, 210, 113, 57, 46, 203, 166, 210, 20, 155, 105,
-            ],
+            &e.storage()
+                .get::<Symbol, BytesN<32>>(&symbol!("T"))
+                .unwrap()
+                .unwrap(),
         );
-        let client = token::Client::new(&e, &token_id);
 
-        client.xfer(&e.current_contract_address(), &id, &(amount - 100))
+        token_client.xfer(&e.current_contract_address(), &id, &(amount - 100))
     }
 }
