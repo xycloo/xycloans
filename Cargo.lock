@@ -332,6 +332,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "flash-loan-vault"
+version = "0.0.0"
+dependencies = [
+ "soroban-sdk",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"

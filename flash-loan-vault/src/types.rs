@@ -1,5 +1,5 @@
-use soroban_auth::Identifier;
-use soroban_sdk::contracttype;
+//use soroban_auth::Identifier;
+use soroban_sdk::{contracterror, contracttype, Address};
 
 #[derive(Clone)]
 #[contracttype]
@@ -8,15 +8,22 @@ pub enum DataKey {
     Admin,
     TotSupply,
     FlashLoan,
-    InitialDep(Identifier),
-    Nonce(Identifier),
+    FlashLoanB,
+    InitialDep(Address),
     Batch(BatchKey),
-    Batches(Identifier),
+    Batches(Address),
+}
+
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum Error {
+    Generic = 1,
 }
 
 #[derive(Clone)]
 #[contracttype]
-pub struct BatchKey(pub Identifier, pub u64);
+pub struct BatchKey(pub Address, pub u64);
 
 #[derive(Clone)]
 #[contracttype]
