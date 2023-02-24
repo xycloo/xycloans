@@ -4,30 +4,39 @@ use crate::{
     token,
     types::{BatchKey, BatchObj, DataKey},
 };
-use soroban_auth::{Identifier, Signature};
-use soroban_sdk::{contractimpl, log, BytesN, Env, Vec};
+use soroban_sdk::{contractimpl, log, Address, BytesN, Env, Vec};
 
 pub trait VaultContractTrait {
-    fn initialize(e: Env, admin: Identifier, token_id: BytesN<32>, flash_loan: BytesN<32>);
+    fn initialize(
+        e: Env,
+        admin: Address,
+        token_id: BytesN<32>,
+        flash_loan: Address,
+        flash_loan_bytes: BytesN<32>,
+    );
 
-    fn nonce(e: Env) -> i128;
+    fn deposit(e: Env, from: Address, amount: i128) -> u64;
 
-    fn deposit(e: Env, from: Identifier, amount: i128) -> u64;
+    fn fee_withd(e: Env, to: Address, batch_ts: u64, shares: i128);
 
-    fn fee_withd(e: Env, to: Identifier, batch_ts: u64, shares: i128);
+    fn get_shares(e: Env, id: Address, batch_ts: u64) -> BatchObj;
 
-    fn get_shares(e: Env, id: Identifier, batch_ts: u64) -> BatchObj;
+    fn batches(e: Env, id: Address) -> Vec<u64>;
 
-    fn batches(e: Env, id: Identifier) -> Vec<u64>;
-
-    fn withdraw(e: Env, to: Identifier) -> i128;
+    fn withdraw(e: Env, to: Address) -> i128;
 }
 
 pub struct VaultContract;
 
 #[contractimpl]
 impl VaultContractTrait for VaultContract {
-    fn initialize(e: Env, admin: Identifier, token_id: BytesN<32>, flash_loan: BytesN<32>) {
+    fn initialize(
+        e: Env,
+        admin: Address,
+        token_id: BytesN<32>,
+        flash_loan: Address,
+        flash_loan_bytes: BytesN<32>,
+    ) {
         log!(&e, "initializing");
 
         if has_administrator(&e) {
@@ -36,26 +45,17 @@ impl VaultContractTrait for VaultContract {
 
         write_administrator(&e, admin);
         put_flash_loan(&e, flash_loan);
+        put_flash_loan_bytes(&e, flash_loan_bytes);
         put_token_id(&e, token_id);
     }
 
-    fn nonce(e: Env) -> i128 {
-        read_nonce(&e, &read_administrator(&e))
-    }
-
-    fn deposit(e: Env, from: Identifier, amount: i128) -> u64 {
-        log!(&e, "depositing");
+    fn deposit(e: Env, from: Address, amount: i128) -> u64 {
         transfer_in_vault(&e, &from, &amount);
 
         let contract_id = get_token_id(&e);
-        let token_client = token::Client::new(&e, contract_id);
+        let token_client = token::Client::new(&e, &contract_id);
 
-        token_client.xfer(
-            &Signature::Invoker,
-            &0,
-            &Identifier::Contract(get_flash_loan(&e)),
-            &amount,
-        );
+        token_client.xfer(&get_contract_addr(&e), &get_flash_loan(&e), &amount);
 
         let tot_supply = get_tot_supply(&e);
 
@@ -65,28 +65,28 @@ impl VaultContractTrait for VaultContract {
             (amount * tot_supply) / (get_token_balance(&e) - amount)
         };
 
-        e.storage().set(DataKey::InitialDep(from.clone()), amount);
+        e.storage().set(&DataKey::InitialDep(from.clone()), &amount);
         mint_shares(&e, from, shares, amount)
     }
 
-    fn get_shares(e: Env, id: Identifier, batch_ts: u64) -> BatchObj {
+    fn get_shares(e: Env, id: Address, batch_ts: u64) -> BatchObj {
         let key = DataKey::Batch(BatchKey(id, batch_ts));
 
-        let batch: BatchObj = e.storage().get(key).unwrap().unwrap();
+        let batch: BatchObj = e.storage().get(&key).unwrap().unwrap();
 
         batch
     }
 
-    fn batches(e: Env, id: Identifier) -> Vec<u64> {
+    fn batches(e: Env, id: Address) -> Vec<u64> {
         get_user_batches(&e, id)
     }
 
-    fn fee_withd(e: Env, to: Identifier, batch_ts: u64, shares: i128) {
+    fn fee_withd(e: Env, to: Address, batch_ts: u64, shares: i128) {
         let tot_supply = get_tot_supply(&e);
         let tot_bal = get_token_balance(&e);
         let batch: BatchObj = e
             .storage()
-            .get(DataKey::Batch(BatchKey(to.clone(), batch_ts)))
+            .get(&DataKey::Batch(BatchKey(to.clone(), batch_ts)))
             .unwrap()
             .unwrap();
         let deposit = batch.deposit;
@@ -116,9 +116,9 @@ impl VaultContractTrait for VaultContract {
         }
     }
 
-    fn withdraw(e: Env, to: Identifier) -> i128 {
+    fn withdraw(e: Env, to: Address) -> i128 {
         let batches = get_user_batches(&e, to.clone());
-        log!(&e, "batches {}", batches.clone());
+        log!(&e, "batches {}", batches);
 
         let mut amount: i128 = 0;
         let mut temp_supply: i128 = get_tot_supply(&e);
@@ -130,7 +130,7 @@ impl VaultContractTrait for VaultContract {
             let key = DataKey::Batch(BatchKey(to.clone(), batch_ts));
             let batch: BatchObj = e
                 .storage()
-                .get(key.clone())
+                .get(&key.clone())
                 .unwrap_or_else(|| panic!("no batch with this id"))
                 .unwrap();
 
@@ -159,12 +159,13 @@ impl VaultContractTrait for VaultContract {
 
         let initial_deposit = e
             .storage()
-            .get::<DataKey, i128>(DataKey::InitialDep(to.clone()))
+            .get::<DataKey, i128>(&DataKey::InitialDep(to.clone()))
             .unwrap()
             .unwrap();
 
-        let fl_client = flash_loan::Client::new(&e, get_flash_loan(&e));
-        fl_client.withdraw(&Signature::Invoker, &initial_deposit, &to);
+        let fl_bytes_id = get_flash_loan_bytes(&e);
+        let fl_client = flash_loan::Client::new(&e, &fl_bytes_id);
+        fl_client.withdraw(&get_contract_addr(&e), &initial_deposit, &to);
         transfer(&e, &to, amount);
         amount
     }

@@ -1,7 +1,6 @@
 #![no_std]
 use receiver_interface::{Contract, ReceiverError};
-use soroban_auth::{Identifier, Signature};
-use soroban_sdk::{contractimpl, BytesN, Env};
+use soroban_sdk::{contractimpl, symbol, Address, BytesN, Env, Symbol};
 
 mod token {
     soroban_sdk::contractimport!(file = "../../soroban_token_spec.wasm");
@@ -15,6 +14,7 @@ mod receiver_interface {
 }
 
 pub struct FlashLoanReceiverContract;
+pub struct FlashLoanReceiverContractExt;
 
 fn compute_fee(amount: &i128) -> i128 {
     5 * amount / 10000 // 0.05%, still TBD
@@ -25,13 +25,10 @@ impl receiver_interface::Contract for FlashLoanReceiverContract {
     fn exec_op(e: Env) -> Result<(), ReceiverError> {
         let token_client = token::Client::new(
             &e,
-            &BytesN::from_array(
-                &e,
-                &[
-                    78, 52, 121, 202, 209, 66, 106, 25, 193, 181, 10, 91, 46, 213, 58, 244, 217,
-                    115, 23, 232, 144, 71, 210, 113, 57, 46, 203, 166, 210, 20, 155, 105,
-                ],
-            ),
+            &e.storage()
+                .get::<Symbol, BytesN<32>>(&symbol!("T"))
+                .unwrap()
+                .unwrap(),
         );
 
         /*
@@ -41,12 +38,23 @@ impl receiver_interface::Contract for FlashLoanReceiverContract {
         // Re-paying the loan + 0.05% interest
         let total_amount = 100000 + compute_fee(&100000);
         token_client.incr_allow(
-            &Signature::Invoker,
-            &0,
-            &Identifier::Contract(BytesN::from_array(&e, &[5; 32])),
+            &e.current_contract_address(),
+            &e.storage()
+                .get::<Symbol, Address>(&symbol!("FL"))
+                .unwrap()
+                .unwrap(),
             &total_amount,
         );
 
+        Ok(())
+    }
+}
+
+#[contractimpl]
+impl FlashLoanReceiverContractExt {
+    pub fn init(e: Env, token_id: BytesN<32>, fl_address: Address) -> Result<(), ReceiverError> {
+        e.storage().set(&symbol!("T"), &token_id);
+        e.storage().set(&symbol!("FL"), &fl_address);
         Ok(())
     }
 }

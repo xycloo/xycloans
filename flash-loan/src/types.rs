@@ -1,4 +1,3 @@
-use soroban_auth::Identifier;
 use soroban_sdk::{contracterror, contracttype};
 
 #[contracterror]
@@ -15,6 +14,5 @@ pub enum Error {
 #[derive(Clone)]
 pub enum DataKey {
     TokenId,
-    Nonce(Identifier),
     LP,
 }
