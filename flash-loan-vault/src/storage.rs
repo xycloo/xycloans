@@ -1,12 +1,8 @@
-//use soroban_auth::{Identifier, Signature};
-use soroban_sdk::{
-    xdr::{Hash, ScAddress, ScObject, ScVal},
-    Address, BytesN, Env, FromVal, IntoVal, RawVal, TryFromVal, Vec,
-};
+use soroban_sdk::{Address, BytesN, Env, Vec};
 
 use crate::{
     token,
-    types::{BatchKey, BatchObj, DataKey, Error},
+    types::{BatchKey, BatchObj, DataKey},
 };
 
 pub fn get_contract_addr(e: &Env) -> Address {
@@ -77,7 +73,7 @@ pub fn has_administrator(e: &Env) -> bool {
     e.storage().has(&key)
 }
 
-pub fn read_administrator(e: &Env) -> Address {
+pub fn _read_administrator(e: &Env) -> Address {
     let key = DataKey::Admin;
     e.storage().get_unchecked(&key).unwrap()
 }

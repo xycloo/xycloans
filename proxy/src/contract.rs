@@ -1,4 +1,3 @@
-//use soroban_auth::{Address, Signature};
 use soroban_sdk::{contractimpl, Address, BytesN, Env};
 
 use crate::storage::*;
@@ -98,7 +97,6 @@ impl LPTrait for ProxyLP {
         token_contract_id: BytesN<32>,
         amount: i128,
     ) -> Result<(), Error> {
-        //        let provider = sig.identifier(&env);
         vault_deposit(&env, lender, token_contract_id, amount)?;
         Ok(())
     }
@@ -110,7 +108,6 @@ impl LPTrait for ProxyLP {
         batch_ts: u64,
         shares: i128,
     ) -> Result<(), Error> {
-        //        let provider = sig.identifier(&env);
         vault_withdraw_fees(&env, lender, token_contract_id, batch_ts, shares)?;
         Ok(())
     }

@@ -1,6 +1,5 @@
 #![no_std]
 use receiver_interface::{Contract, ReceiverError};
-//use soroban_auth::{Identifier, Signature};
 use soroban_sdk::{contractimpl, symbol, Address, BytesN, Env, Symbol};
 
 mod token {

@@ -4,7 +4,6 @@ use crate::{
     token,
     types::{BatchKey, BatchObj, DataKey},
 };
-//use soroban_auth::{Identifier, Signature};
 use soroban_sdk::{contractimpl, log, Address, BytesN, Env, Vec};
 
 pub trait VaultContractTrait {
@@ -119,7 +118,7 @@ impl VaultContractTrait for VaultContract {
 
     fn withdraw(e: Env, to: Address) -> i128 {
         let batches = get_user_batches(&e, to.clone());
-        log!(&e, "batches {}", batches.clone());
+        log!(&e, "batches {}", batches);
 
         let mut amount: i128 = 0;
         let mut temp_supply: i128 = get_tot_supply(&e);

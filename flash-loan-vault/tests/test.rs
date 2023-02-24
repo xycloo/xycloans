@@ -18,11 +18,9 @@ mod loan_ctr {
     contractimport!(file = "../target/wasm32-unknown-unknown/release/flash_loan.wasm");
 }
 
-//use crate::{VaultContract, VaultContractClient};
-//use soroban_auth::{Identifier, Signature};
 use soroban_sdk::testutils::Logger;
 use soroban_sdk::testutils::{Ledger, LedgerInfo};
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, IntoVal};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
 
 #[test]
 fn test() {
@@ -39,8 +37,6 @@ fn test() {
 
     let user1 = Address::random(&e);
     let user2 = Address::random(&e);
-    //    let user1_id = Identifier::Account(user1.clone());
-    //    let user2_id = Identifier::Account(user2.clone());
 
     let token_id = e.register_stellar_asset_contract(admin1.clone());
     let usdc_token = token::Client::new(&e, &token_id);
@@ -70,7 +66,7 @@ fn test() {
 
     assert_eq!(usdc_token.balance(&user1), 500);
 
-    let batch = vault_client.get_shares(&user1, &1666359075);
+    let _batch = vault_client.get_shares(&user1, &1666359075);
 
     e.ledger().set(LedgerInfo {
         timestamp: 1667369075,
@@ -84,7 +80,7 @@ fn test() {
 
     assert_eq!(usdc_token.balance(&user1), 500);
 
-    let batch = vault_client.get_shares(&user1, &1667369075);
+    let _batch = vault_client.get_shares(&user1, &1667369075);
 
     e.ledger().set(LedgerInfo {
         timestamp: 1767369075,
@@ -98,7 +94,7 @@ fn test() {
 
     assert_eq!(usdc_token.balance(&user2), 0);
 
-    let batch = vault_client.get_shares(&user2, &1767369075);
+    let _batch = vault_client.get_shares(&user2, &1767369075);
 
     e.ledger().set(LedgerInfo {
         timestamp: 1867369075,

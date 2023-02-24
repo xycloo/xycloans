@@ -1,4 +1,3 @@
-//use soroban_auth::{Identifier, Signature};
 use soroban_sdk::{symbol, Address, BytesN, Env, IntoVal, RawVal};
 
 use crate::{

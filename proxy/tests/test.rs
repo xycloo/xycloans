@@ -1,5 +1,4 @@
 #![cfg(test)]
-//use soroban_auth::{Identifier, Signature};
 use soroban_sdk::testutils::{Ledger, LedgerInfo};
 use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, IntoVal};
 
@@ -56,7 +55,6 @@ fn workflow() {
     });
 
     let lp = Address::random(&e);
-    //    let lp_id = Identifier::Account(lp.clone());
 
     let token_id = e.register_stellar_asset_contract(token_admin.clone());
     let usdc_token = token::Client::new(&e, &token_id);

@@ -1,11 +1,9 @@
-//use soroban_auth::{verify, Identifier, Signature};
-use soroban_sdk::{contractimpl, symbol, Address, BytesN, Env};
+use soroban_sdk::{contractimpl, Address, BytesN, Env};
 
 use crate::{
     types::{DataKey, Error},
     utils::{
-        get_contract_addr, get_lp, has_lp, invoke_receiver, is_initialized, set_lp, set_token,
-        transfer, try_repay,
+        get_lp, has_lp, invoke_receiver, is_initialized, set_lp, set_token, transfer, try_repay,
     },
 };
 
