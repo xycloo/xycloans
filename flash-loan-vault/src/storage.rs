@@ -65,7 +65,7 @@ pub fn transfer_in_vault(e: &Env, from: &Address, amount: &i128) {
     let client = token::Client::new(e, &get_token_id(e));
     let vault_addr = get_contract_addr(e);
 
-    client.xfer_from(&vault_addr, from, &vault_addr, amount);
+    client.xfer(from, &vault_addr, amount);
 }
 
 pub fn has_administrator(e: &Env) -> bool {

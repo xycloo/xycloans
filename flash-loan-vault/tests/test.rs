@@ -55,12 +55,7 @@ fn test() {
     vault_client.initialize(&user1, &token_id, &flash_loan_id, &flash_loan_contract_id);
 
     usdc_token.mint(&admin1, &user1, &1000);
-
     usdc_token.mint(&admin1, &user2, &1000);
-
-    usdc_token.incr_allow(&user1, &vault_id, &1000);
-
-    usdc_token.incr_allow(&user2, &vault_id, &1000);
 
     vault_client.deposit(&user1, &500);
 

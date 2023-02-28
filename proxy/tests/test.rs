@@ -1,6 +1,6 @@
 #![cfg(test)]
 use soroban_sdk::testutils::{Ledger, LedgerInfo};
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, IntoVal};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
 
 mod token {
     use soroban_sdk::contractimport;
@@ -85,12 +85,9 @@ fn workflow() {
     );
 
     proxy_client.set_vault(&protocol, &token_id, &vault_contract_id);
-
     proxy_client.set_fl(&protocol, &token_id, &flash_loan_contract_id);
 
     usdc_token.mint(&token_admin, &lp, &1000000);
-
-    usdc_token.incr_allow(&lp, &vault_id, &1000000);
 
     proxy_client.deposit(&lp, &token_id, &1000000);
 
