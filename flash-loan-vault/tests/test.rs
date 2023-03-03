@@ -27,14 +27,6 @@ fn test() {
     let e: Env = Default::default();
     let admin1 = Address::random(&e);
 
-    e.ledger().set(LedgerInfo {
-        timestamp: 1666359075,
-        protocol_version: 1,
-        sequence_number: 10,
-        network_id: Default::default(),
-        base_reserve: 10,
-    });
-
     let user1 = Address::random(&e);
     let user2 = Address::random(&e);
 
@@ -61,82 +53,52 @@ fn test() {
 
     assert_eq!(usdc_token.balance(&user1), 500);
 
-    let _batch = vault_client.get_shares(&user1, &1666359075);
-
-    e.ledger().set(LedgerInfo {
-        timestamp: 1667369075,
-        protocol_version: 1,
-        sequence_number: 10,
-        network_id: Default::default(),
-        base_reserve: 10,
-    });
-
-    vault_client.fee_withd(&user1, &1666359075, &500);
+    vault_client.fee_withd(&user1, &0, &500);
 
     assert_eq!(usdc_token.balance(&user1), 500);
 
-    let _batch = vault_client.get_shares(&user1, &1667369075);
-
-    e.ledger().set(LedgerInfo {
-        timestamp: 1767369075,
-        protocol_version: 1,
-        sequence_number: 10,
-        network_id: Default::default(),
-        base_reserve: 10,
-    });
+    let _batch = vault_client.get_shares(&user1, &0);
 
     vault_client.deposit(&user2, &1000);
 
     assert_eq!(usdc_token.balance(&user2), 0);
 
-    let _batch = vault_client.get_shares(&user2, &1767369075);
+    let _batch = vault_client.get_shares(&user2, &0);
 
-    e.ledger().set(LedgerInfo {
-        timestamp: 1867369075,
-        protocol_version: 1,
-        sequence_number: 10,
-        network_id: Default::default(),
-        base_reserve: 10,
-    });
-
-    vault_client.fee_withd(&user2, &1767369075, &1000);
+    vault_client.fee_withd(&user2, &0, &1000);
 
     // fees arrive
     usdc_token.mint(&admin1, &vault_id, &(100));
 
-    e.ledger().set(LedgerInfo {
-        timestamp: 1967369075,
-        protocol_version: 1,
-        sequence_number: 10,
-        network_id: Default::default(),
-        base_reserve: 10,
-    });
+    vault_client.fee_withd(&user2, &1, &500);
 
-    vault_client.fee_withd(&user2, &1867369075, &500);
-
-    let _batch = vault_client.get_shares(&user2, &1867369075);
+    let _batch = vault_client.get_shares(&user2, &1);
 
     extern crate std;
     for batch_el in vault_client.batches(&user1).iter() {
         let el_u = batch_el.unwrap();
-        std::println!(
-            "\n\n user 1 batch {:?} is {:?} {:?} {:?} \n",
-            el_u,
-            vault_client.get_shares(&user1, &el_u).curr_s,
-            vault_client.get_shares(&user1, &el_u).init_s,
-            vault_client.get_shares(&user1, &el_u).deposit,
-        );
+        if let Some(batch) = vault_client.get_shares(&user1, &el_u) {
+            std::println!(
+                "\n\n user 1 batch {:?} is {:?} {:?} {:?} \n",
+                el_u,
+                batch.curr_s,
+                batch.init_s,
+                batch.deposit,
+            );
+        }
     }
 
     for batch_el in vault_client.batches(&user2).iter() {
         let el_u = batch_el.unwrap();
-        std::println!(
-            "\n\n user 2 batch {:?} is {:?} {:?} {:?} \n",
-            el_u,
-            vault_client.get_shares(&user2, &el_u).curr_s,
-            vault_client.get_shares(&user2, &el_u).init_s,
-            vault_client.get_shares(&user2, &el_u).deposit,
-        );
+        if let Some(batch) = vault_client.get_shares(&user2, &el_u) {
+            std::println!(
+                "\n\n user 2 batch {:?} is {:?} {:?} {:?} \n",
+                el_u,
+                batch.curr_s,
+                batch.init_s,
+                batch.deposit,
+            );
+        }
     }
 
     std::println!(
@@ -165,24 +127,28 @@ fn test() {
 
     for batch_el in vault_client.batches(&user1).iter() {
         let el_u = batch_el.unwrap();
-        std::println!(
-            "\n\n user 1 batch {:?} is {:?} {:?} {:?} \n",
-            el_u,
-            vault_client.get_shares(&user1, &el_u).curr_s,
-            vault_client.get_shares(&user1, &el_u).init_s,
-            vault_client.get_shares(&user1, &el_u).deposit,
-        );
+        if let Some(batch) = vault_client.get_shares(&user1, &el_u) {
+            std::println!(
+                "\n\n user 1 batch {:?} is {:?} {:?} {:?} \n",
+                el_u,
+                batch.curr_s,
+                batch.init_s,
+                batch.deposit,
+            );
+        }
     }
 
     for batch_el in vault_client.batches(&user2).iter() {
         let el_u = batch_el.unwrap();
-        std::println!(
-            "\n\n user 2 batch {:?} is {:?} {:?} {:?} \n",
-            el_u,
-            vault_client.get_shares(&user2, &el_u).curr_s,
-            vault_client.get_shares(&user2, &el_u).init_s,
-            vault_client.get_shares(&user2, &el_u).deposit,
-        );
+        if let Some(batch) = vault_client.get_shares(&user2, &el_u) {
+            std::println!(
+                "\n\n user 2 batch {:?} is {:?} {:?} {:?} \n",
+                el_u,
+                batch.curr_s,
+                batch.init_s,
+                batch.deposit,
+            );
+        }
     }
 
     let _logs = e.logger().all();

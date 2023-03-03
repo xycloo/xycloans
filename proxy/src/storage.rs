@@ -78,11 +78,11 @@ pub fn vault_withdraw_fees(
     env: &Env,
     provider: Address,
     token_contract_id: BytesN<32>,
-    batch_ts: u64,
+    batch_n: i128,
     shares: i128,
 ) -> Result<(), Error> {
     let vault_client = vault::Client::new(env, &get_vault(env, token_contract_id)?);
-    vault_client.fee_withd(&provider, &batch_ts, &shares);
+    vault_client.fee_withd(&provider, &batch_n, &shares);
     Ok(())
 }
 

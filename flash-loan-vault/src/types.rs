@@ -11,6 +11,7 @@ pub enum DataKey {
     InitialDep(Address),
     Batch(BatchKey),
     Batches(Address),
+    Increment(Address),
 }
 
 #[contracterror]
@@ -22,7 +23,7 @@ pub enum Error {
 
 #[derive(Clone)]
 #[contracttype]
-pub struct BatchKey(pub Address, pub u64);
+pub struct BatchKey(pub Address, pub i128);
 
 #[derive(Clone)]
 #[contracttype]

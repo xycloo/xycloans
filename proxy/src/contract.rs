@@ -39,7 +39,7 @@ pub trait LPTrait {
         env: Env,
         lender: Address,
         token_contract_id: BytesN<32>,
-        batch_ts: u64,
+        batch_ts: i128,
         amount: i128,
     ) -> Result<(), Error>;
 }
@@ -105,10 +105,10 @@ impl LPTrait for ProxyLP {
         env: Env,
         lender: Address,
         token_contract_id: BytesN<32>,
-        batch_ts: u64,
+        batch_n: i128,
         shares: i128,
     ) -> Result<(), Error> {
-        vault_withdraw_fees(&env, lender, token_contract_id, batch_ts, shares)?;
+        vault_withdraw_fees(&env, lender, token_contract_id, batch_n, shares)?;
         Ok(())
     }
 }

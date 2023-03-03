@@ -1,4 +1,4 @@
-use soroban_sdk::{Address, BytesN, Env, Vec};
+use soroban_sdk::{vec, Address, BytesN, Env, Vec};
 
 use crate::{
     token,
@@ -83,12 +83,13 @@ pub fn write_administrator(e: &Env, id: Address) {
     e.storage().set(&key, &id);
 }
 
-pub fn mint_shares(e: &Env, to: Address, shares: i128, deposit: i128) -> u64 {
+pub fn mint_shares(e: &Env, to: Address, shares: i128, deposit: i128) -> i128 {
     let tot_supply = get_tot_supply(e);
     put_tot_supply(e, tot_supply + shares);
 
-    let ts = e.ledger().timestamp();
-    let key = DataKey::Batch(BatchKey(to.clone(), ts));
+    //    let ts = e.ledger().timestamp();
+    let n = get_increment(e, to.clone());
+    let key = DataKey::Batch(BatchKey(to.clone(), n));
 
     let val = BatchObj {
         init_s: shares,
@@ -96,21 +97,24 @@ pub fn mint_shares(e: &Env, to: Address, shares: i128, deposit: i128) -> u64 {
         curr_s: shares,
     };
 
-    add_user_batch(e, to, ts);
+    //    add_user_batch(e, to, ts);
+    put_increment(e, to, n + 1);
     e.storage().set(&key, &val);
 
-    ts
+    n
 }
 
-pub fn get_user_batches(e: &Env, id: Address) -> Vec<u64> {
-    let key = DataKey::Batches(id);
-    e.storage()
-        .get(&key)
-        .unwrap_or_else(|| Ok(Vec::new(e)))
-        .unwrap()
+pub fn get_user_batches(e: &Env, id: Address) -> Vec<i128> {
+    let n = get_increment(e, id);
+    let mut batches = vec![e];
+    for i in 0..n {
+        batches.push_back(i)
+    }
+
+    batches
 }
 
-pub fn add_user_batch(e: &Env, id: Address, batch_ts: u64) {
+/*pub fn add_user_batch(e: &Env, id: Address, batch_ts: u64) {
     let mut batches = get_user_batches(e, id.clone());
     batches.push_front(batch_ts);
 
@@ -126,11 +130,11 @@ pub fn remove_user_batch(e: &Env, id: Address, batch_ts: u64) {
 
     let key = DataKey::Batches(id);
     e.storage().set(&key, &batches);
-}
+}*/
 
-pub fn burn_shares(e: &Env, to: Address, shares: i128, batch_ts: u64) {
+pub fn burn_shares(e: &Env, to: Address, shares: i128, batch_n: i128) {
     let tot_supply = get_tot_supply(e);
-    let key = DataKey::Batch(BatchKey(to.clone(), batch_ts));
+    let key = DataKey::Batch(BatchKey(to.clone(), batch_n));
 
     let mut batch: BatchObj = e.storage().get(&key).unwrap().unwrap();
     batch.curr_s -= shares;
@@ -138,8 +142,19 @@ pub fn burn_shares(e: &Env, to: Address, shares: i128, batch_ts: u64) {
 
     if batch.curr_s == 0 {
         e.storage().remove(&key); // if there are 0 shares remove the batch
-        remove_user_batch(e, to, batch_ts);
+                                  //        remove_user_batch(e, to, batch_n);
     } else {
         e.storage().set(&key, &batch);
     }
+}
+
+pub fn put_increment(e: &Env, id: Address, n: i128) {
+    e.storage().set(&DataKey::Increment(id), &n);
+}
+
+pub fn get_increment(e: &Env, id: Address) -> i128 {
+    e.storage()
+        .get(&DataKey::Increment(id))
+        .unwrap_or(Ok(0))
+        .unwrap()
 }
