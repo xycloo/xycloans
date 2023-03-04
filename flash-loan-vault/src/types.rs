@@ -10,7 +10,6 @@ pub enum DataKey {
     FlashLoanB,
     InitialDep(Address),
     Batch(BatchKey),
-    Batches(Address),
     Increment(Address),
 }
 

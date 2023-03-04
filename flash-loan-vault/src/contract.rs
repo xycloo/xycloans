@@ -77,6 +77,7 @@ impl VaultContractTrait for VaultContract {
         batch
     }
 
+    // Batches returns an integer `current_n`. Batches are stored with key `BatchKey(Address, current_n)`, so having `current_n` and iterating up to it (0..n) will help to gather all of the user's batches (you'll still need to filter for batches that have been completely withdrawn, thus deleted).
     fn batches(e: Env, id: Address) -> Vec<i128> {
         get_user_batches(&e, id)
     }

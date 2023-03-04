@@ -87,7 +87,6 @@ pub fn mint_shares(e: &Env, to: Address, shares: i128, deposit: i128) -> i128 {
     let tot_supply = get_tot_supply(e);
     put_tot_supply(e, tot_supply + shares);
 
-    //    let ts = e.ledger().timestamp();
     let n = get_increment(e, to.clone());
     let key = DataKey::Batch(BatchKey(to.clone(), n));
 
@@ -97,7 +96,6 @@ pub fn mint_shares(e: &Env, to: Address, shares: i128, deposit: i128) -> i128 {
         curr_s: shares,
     };
 
-    //    add_user_batch(e, to, ts);
     put_increment(e, to, n + 1);
     e.storage().set(&key, &val);
 
@@ -114,24 +112,6 @@ pub fn get_user_batches(e: &Env, id: Address) -> Vec<i128> {
     batches
 }
 
-/*pub fn add_user_batch(e: &Env, id: Address, batch_ts: u64) {
-    let mut batches = get_user_batches(e, id.clone());
-    batches.push_front(batch_ts);
-
-    let key = DataKey::Batches(id);
-    e.storage().set(&key, &batches);
-}
-
-pub fn remove_user_batch(e: &Env, id: Address, batch_ts: u64) {
-    let mut batches = get_user_batches(e, id.clone());
-    let batch_idx = batches.iter().position(|x| x.unwrap() == batch_ts).unwrap();
-
-    batches.remove(batch_idx as u32);
-
-    let key = DataKey::Batches(id);
-    e.storage().set(&key, &batches);
-}*/
-
 pub fn burn_shares(e: &Env, to: Address, shares: i128, batch_n: i128) {
     let tot_supply = get_tot_supply(e);
     let key = DataKey::Batch(BatchKey(to.clone(), batch_n));
@@ -142,7 +122,6 @@ pub fn burn_shares(e: &Env, to: Address, shares: i128, batch_n: i128) {
 
     if batch.curr_s == 0 {
         e.storage().remove(&key); // if there are 0 shares remove the batch
-                                  //        remove_user_batch(e, to, batch_n);
     } else {
         e.storage().set(&key, &batch);
     }
