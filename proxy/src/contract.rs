@@ -2,6 +2,9 @@ use soroban_sdk::{contractimpl, Address, BytesN, Env};
 
 use crate::storage::*;
 use crate::types::Error;
+use crate::vault::Client;
+
+pub struct ProxyTest;
 
 pub struct ProxyCommon;
 pub struct ProxyLP;
@@ -27,12 +30,9 @@ pub trait AdminTrait {
 
 pub trait LPTrait {
     /// Deposit liquidity into an existing vault
-    fn deposit(
-        env: Env,
-        lender: Address,
-        token_contract_id: BytesN<32>,
-        amount: i128,
-    ) -> Result<(), Error>;
+    fn deposit(env: Env, lender: Address, token_contract_id: BytesN<32>, amount: i128) -> i128;
+
+    fn call_dep(e: Env, provider: Address, vault: BytesN<32>) -> i128;
 
     /// Withdraw fees for a certain amount of shares of a batch
     fn fee_width(
@@ -91,14 +91,16 @@ impl AdminTrait for ProxyCommon {
 
 #[contractimpl]
 impl LPTrait for ProxyLP {
-    fn deposit(
-        env: Env,
-        lender: Address,
-        token_contract_id: BytesN<32>,
-        amount: i128,
-    ) -> Result<(), Error> {
-        vault_deposit(&env, lender, token_contract_id, amount)?;
-        Ok(())
+    fn deposit(env: Env, lender: Address, token_contract_id: BytesN<32>, amount: i128) -> i128 {
+        let vault = get_vault(&env, token_contract_id).unwrap();
+        let vault_client = Client::new(&env, &vault);
+
+        vault_client.deposit(&lender, &amount)
+    }
+
+    fn call_dep(e: Env, provider: Address, vault: BytesN<32>) -> i128 {
+        let vault_client = Client::new(&e, &vault);
+        vault_client.deposit(&provider, &2)
     }
 
     fn fee_width(
