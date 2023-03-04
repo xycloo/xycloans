@@ -88,7 +88,6 @@ fn workflow() {
     proxy_client.set_fl(&protocol, &token_id, &flash_loan_contract_id);
 
     usdc_token.mint(&token_admin, &lp, &1000000);
-
     proxy_client.deposit(&lp, &token_id, &1000000);
 
     assert_eq!(usdc_token.balance(&vault_id), 0);

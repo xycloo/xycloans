@@ -15,13 +15,13 @@ pub trait VaultContractTrait {
         flash_loan_bytes: BytesN<32>,
     );
 
-    fn deposit(e: Env, from: Address, amount: i128) -> u64;
+    fn deposit(e: Env, from: Address, amount: i128) -> i128;
 
-    fn fee_withd(e: Env, to: Address, batch_ts: u64, shares: i128);
+    fn fee_withd(e: Env, to: Address, batch_ts: i128, shares: i128);
 
-    fn get_shares(e: Env, id: Address, batch_ts: u64) -> BatchObj;
+    fn get_shares(e: Env, id: Address, batch_ts: i128) -> Option<BatchObj>;
 
-    fn batches(e: Env, id: Address) -> Vec<u64>;
+    fn batches(e: Env, id: Address) -> Vec<i128>;
 
     fn withdraw(e: Env, to: Address) -> i128;
 }
@@ -49,7 +49,7 @@ impl VaultContractTrait for VaultContract {
         put_token_id(&e, token_id);
     }
 
-    fn deposit(e: Env, from: Address, amount: i128) -> u64 {
+    fn deposit(e: Env, from: Address, amount: i128) -> i128 {
         transfer_in_vault(&e, &from, &amount);
 
         let contract_id = get_token_id(&e);
@@ -69,24 +69,25 @@ impl VaultContractTrait for VaultContract {
         mint_shares(&e, from, shares, amount)
     }
 
-    fn get_shares(e: Env, id: Address, batch_ts: u64) -> BatchObj {
-        let key = DataKey::Batch(BatchKey(id, batch_ts));
+    fn get_shares(e: Env, id: Address, batch_n: i128) -> Option<BatchObj> {
+        let key = DataKey::Batch(BatchKey(id, batch_n));
 
-        let batch: BatchObj = e.storage().get(&key).unwrap().unwrap();
+        let batch: Option<BatchObj> = e.storage().get(&key).unwrap_or(Ok(None)).unwrap();
 
         batch
     }
 
-    fn batches(e: Env, id: Address) -> Vec<u64> {
+    // Batches returns an integer `current_n`. Batches are stored with key `BatchKey(Address, current_n)`, so having `current_n` and iterating up to it (0..n) will help to gather all of the user's batches (you'll still need to filter for batches that have been completely withdrawn, thus deleted).
+    fn batches(e: Env, id: Address) -> Vec<i128> {
         get_user_batches(&e, id)
     }
 
-    fn fee_withd(e: Env, to: Address, batch_ts: u64, shares: i128) {
+    fn fee_withd(e: Env, to: Address, batch_n: i128, shares: i128) {
         let tot_supply = get_tot_supply(&e);
         let tot_bal = get_token_balance(&e);
         let batch: BatchObj = e
             .storage()
-            .get(&DataKey::Batch(BatchKey(to.clone(), batch_ts)))
+            .get(&DataKey::Batch(BatchKey(to.clone(), batch_n)))
             .unwrap()
             .unwrap();
         let deposit = batch.deposit;
@@ -102,7 +103,7 @@ impl VaultContractTrait for VaultContract {
         let fee_amount = ((tot_bal * shares) / tot_supply) - new_deposit;
         if fee_amount >= 0 {
             transfer(&e, &to, fee_amount);
-            burn_shares(&e, to.clone(), shares, batch_ts);
+            burn_shares(&e, to.clone(), shares, batch_n);
             let new_tot_supply = get_tot_supply(&e);
             let new_tot_bal = get_token_balance(&e);
 
@@ -125,9 +126,9 @@ impl VaultContractTrait for VaultContract {
         let mut temp_balance: i128 = get_token_balance(&e);
 
         for batch_el in batches.iter() {
-            let batch_ts = batch_el.unwrap_or_else(|_| panic!("no ts in batch"));
+            let batch_n = batch_el.unwrap_or_else(|_| panic!("no ts in batch"));
 
-            let key = DataKey::Batch(BatchKey(to.clone(), batch_ts));
+            let key = DataKey::Batch(BatchKey(to.clone(), batch_n));
             let batch: BatchObj = e
                 .storage()
                 .get(&key.clone())
@@ -146,7 +147,7 @@ impl VaultContractTrait for VaultContract {
             temp_balance -= fee_amount;
             temp_supply -= curr_s;
 
-            burn_shares(&e, to.clone(), curr_s, batch_ts);
+            burn_shares(&e, to.clone(), curr_s, batch_n);
 
             if temp_balance != new_deposit {
                 temp_supply += (new_deposit * temp_supply) / (temp_balance - new_deposit);
