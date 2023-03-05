@@ -49,28 +49,28 @@ fn test() {
     usdc_token.mint(&admin1, &user1, &1000);
     usdc_token.mint(&admin1, &user2, &1000);
 
-    vault_client.deposit(&user1, &500);
+    vault_client.deposit(&user1, &user1, &500);
 
     assert_eq!(usdc_token.balance(&user1), 500);
 
-    vault_client.fee_withd(&user1, &0, &500);
+    vault_client.fee_withd(&user1, &user1, &0, &500);
 
     assert_eq!(usdc_token.balance(&user1), 500);
 
     let _batch = vault_client.get_shares(&user1, &0);
 
-    vault_client.deposit(&user2, &1000);
+    vault_client.deposit(&user1, &user2, &1000);
 
     assert_eq!(usdc_token.balance(&user2), 0);
 
     let _batch = vault_client.get_shares(&user2, &0);
 
-    vault_client.fee_withd(&user2, &0, &1000);
+    vault_client.fee_withd(&user1, &user2, &0, &1000);
 
     // fees arrive
     usdc_token.mint(&admin1, &vault_id, &(100));
 
-    vault_client.fee_withd(&user2, &1, &500);
+    vault_client.fee_withd(&user1, &user2, &1, &500);
 
     let _batch = vault_client.get_shares(&user2, &1);
 

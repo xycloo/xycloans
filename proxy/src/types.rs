@@ -8,7 +8,7 @@ pub enum DataKey {
     FlashLoan(BytesN<32>),
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 #[contracterror]
 #[repr(u32)]
 pub enum Error {

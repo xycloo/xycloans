@@ -15,15 +15,15 @@ pub trait VaultContractTrait {
         flash_loan_bytes: BytesN<32>,
     );
 
-    fn deposit(e: Env, from: Address, amount: i128) -> i128;
+    fn deposit(e: Env, admin: Address, from: Address, amount: i128) -> i128;
 
-    fn fee_withd(e: Env, to: Address, batch_ts: i128, shares: i128);
+    fn fee_withd(e: Env, admin: Address, to: Address, batch_ts: i128, shares: i128);
 
     fn get_shares(e: Env, id: Address, batch_ts: i128) -> Option<BatchObj>;
 
     fn batches(e: Env, id: Address) -> Vec<i128>;
 
-    fn withdraw(e: Env, to: Address) -> i128;
+    fn withdraw(e: Env, admin: Address, to: Address) -> i128;
 }
 
 pub struct VaultContract;
@@ -49,7 +49,12 @@ impl VaultContractTrait for VaultContract {
         put_token_id(&e, token_id);
     }
 
-    fn deposit(e: Env, from: Address, amount: i128) -> i128 {
+    fn deposit(e: Env, admin: Address, from: Address, amount: i128) -> i128 {
+        if read_admin(&e) != admin {
+            panic!("not the admin")
+        }
+        admin.require_auth();
+
         transfer_in_vault(&e, &from, &amount);
 
         let contract_id = get_token_id(&e);
@@ -82,7 +87,13 @@ impl VaultContractTrait for VaultContract {
         get_user_batches(&e, id)
     }
 
-    fn fee_withd(e: Env, to: Address, batch_n: i128, shares: i128) {
+    fn fee_withd(e: Env, admin: Address, to: Address, batch_n: i128, shares: i128) {
+        if read_admin(&e) != admin {
+            panic!("not the admin")
+        }
+
+        admin.require_auth();
+
         let tot_supply = get_tot_supply(&e);
         let tot_bal = get_token_balance(&e);
         let batch: BatchObj = e
@@ -117,7 +128,13 @@ impl VaultContractTrait for VaultContract {
         }
     }
 
-    fn withdraw(e: Env, to: Address) -> i128 {
+    fn withdraw(e: Env, admin: Address, to: Address) -> i128 {
+        if read_admin(&e) != admin {
+            panic!("not the admin")
+        }
+
+        admin.require_auth();
+
         let batches = get_user_batches(&e, to.clone());
         log!(&e, "batches {}", batches);
 

@@ -73,7 +73,7 @@ pub fn has_administrator(e: &Env) -> bool {
     e.storage().has(&key)
 }
 
-pub fn _read_administrator(e: &Env) -> Address {
+pub fn read_admin(e: &Env) -> Address {
     let key = DataKey::Admin;
     e.storage().get_unchecked(&key).unwrap()
 }

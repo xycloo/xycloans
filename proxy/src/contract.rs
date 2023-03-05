@@ -2,6 +2,7 @@ use soroban_sdk::{contractimpl, Address, BytesN, Env};
 
 use crate::storage::*;
 use crate::types::Error;
+use crate::vault::Client;
 
 pub struct ProxyCommon;
 pub struct ProxyLP;
@@ -27,12 +28,7 @@ pub trait AdminTrait {
 
 pub trait LPTrait {
     /// Deposit liquidity into an existing vault
-    fn deposit(
-        env: Env,
-        lender: Address,
-        token_contract_id: BytesN<32>,
-        amount: i128,
-    ) -> Result<(), Error>;
+    fn deposit(env: Env, lender: Address, token_contract_id: BytesN<32>, amount: i128) -> i128;
 
     /// Withdraw fees for a certain amount of shares of a batch
     fn fee_width(
@@ -73,6 +69,7 @@ impl AdminTrait for ProxyCommon {
         vault_contract_id: BytesN<32>,
     ) -> Result<(), Error> {
         check_admin(&env, &admin)?;
+        admin.require_auth();
         set_vault(&env, token_contract_id, vault_contract_id);
         Ok(())
     }
@@ -84,6 +81,7 @@ impl AdminTrait for ProxyCommon {
         flash_loan_contract_id: BytesN<32>,
     ) -> Result<(), Error> {
         check_admin(&env, &admin)?;
+        admin.require_auth();
         set_flash_loan(&env, token_contract_id, flash_loan_contract_id);
         Ok(())
     }
@@ -91,14 +89,13 @@ impl AdminTrait for ProxyCommon {
 
 #[contractimpl]
 impl LPTrait for ProxyLP {
-    fn deposit(
-        env: Env,
-        lender: Address,
-        token_contract_id: BytesN<32>,
-        amount: i128,
-    ) -> Result<(), Error> {
-        vault_deposit(&env, lender, token_contract_id, amount)?;
-        Ok(())
+    fn deposit(env: Env, lender: Address, token_contract_id: BytesN<32>, amount: i128) -> i128 {
+        lender.require_auth();
+
+        let vault = get_vault(&env, token_contract_id).unwrap();
+        let vault_client = Client::new(&env, &vault);
+
+        vault_client.deposit(&env.current_contract_address(), &lender, &amount)
     }
 
     fn fee_width(
@@ -108,6 +105,7 @@ impl LPTrait for ProxyLP {
         batch_n: i128,
         shares: i128,
     ) -> Result<(), Error> {
+        lender.require_auth();
         vault_withdraw_fees(&env, lender, token_contract_id, batch_n, shares)?;
         Ok(())
     }
