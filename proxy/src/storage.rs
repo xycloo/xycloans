@@ -1,4 +1,4 @@
-use soroban_sdk::{symbol, vec, Address, BytesN, Env, IntoVal, Symbol};
+use soroban_sdk::{Address, BytesN, Env};
 
 use crate::{
     flash_loan,
@@ -61,24 +61,6 @@ pub fn get_flash_loan(env: &Env, token_contract_id: BytesN<32>) -> Result<BytesN
         Err(Error::FlashLoanDoesntExist)
     }
 }
-/*
-pub fn vault_deposit(
-    env: &Env,
-    provider: Address,
-    token_contract_id: BytesN<32>,
-    amount: i128,
-) -> Result<(), Error> {
-    //    let vault_client = vault::Client::new(env, &get_vault(env, token_contract_id)?);
-
-    env.invoke_contract::<Symbol>(
-        &get_vault(env, token_contract_id)?,
-        &symbol!("deposits"),
-        vec![&env, provider.into_val(env), amount.into_val(env)],
-    );
-    //    vault_client.deposit(&provider, &amount);
-
-    Ok(())
-}*/
 
 pub fn vault_withdraw_fees(
     env: &Env,
@@ -88,7 +70,12 @@ pub fn vault_withdraw_fees(
     shares: i128,
 ) -> Result<(), Error> {
     let vault_client = vault::Client::new(env, &get_vault(env, token_contract_id)?);
-    vault_client.fee_withd(&provider, &batch_n, &shares);
+    vault_client.fee_withd(
+        &env.current_contract_address(),
+        &provider,
+        &batch_n,
+        &shares,
+    );
     Ok(())
 }
 
