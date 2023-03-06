@@ -143,35 +143,35 @@ impl VaultContractTrait for VaultContract {
         let mut temp_balance: i128 = get_token_balance(&e);
 
         for batch_el in batches.iter() {
-            let batch_n = batch_el.unwrap_or_else(|_| panic!("no ts in batch"));
-
+            let batch_n = batch_el.unwrap();
             let key = DataKey::Batch(BatchKey(to.clone(), batch_n));
-            let batch: BatchObj = e
-                .storage()
-                .get(&key.clone())
-                .unwrap_or_else(|| panic!("no batch with this id"))
-                .unwrap();
 
-            let deposit = batch.deposit;
-            let init_s = batch.init_s;
-            let curr_s = batch.curr_s;
+            if e.storage().has(&key) {
+                let batch: BatchObj = e
+                    .storage()
+                    .get(&key.clone())
+                    .unwrap_or_else(|| panic!("no batch with this id"))
+                    .unwrap();
 
-            let new_deposit = deposit * (curr_s * 10000000 / init_s) / 10000000;
-            let fee_amount = ((temp_balance * curr_s) / temp_supply) - new_deposit;
+                let deposit = batch.deposit;
+                let init_s = batch.init_s;
+                let curr_s = batch.curr_s;
 
-            amount += fee_amount;
+                let new_deposit = deposit * (curr_s * 10000000 / init_s) / 10000000;
+                let fee_amount = ((temp_balance * curr_s) / temp_supply) - new_deposit;
 
-            temp_balance -= fee_amount;
-            temp_supply -= curr_s;
+                amount += fee_amount;
 
-            burn_shares(&e, to.clone(), curr_s, batch_n);
+                temp_balance -= fee_amount;
+                temp_supply -= curr_s;
 
-            if temp_balance != new_deposit {
-                temp_supply += (new_deposit * temp_supply) / (temp_balance - new_deposit);
-                log!(&e, "deposit != balance", amount);
-            } else {
-                temp_supply += (new_deposit * temp_supply) / (new_deposit);
-                log!(&e, "deposit == balance", amount);
+                burn_shares(&e, to.clone(), curr_s, batch_n);
+
+                if temp_balance != new_deposit {
+                    temp_supply += (new_deposit * temp_supply) / (temp_balance - new_deposit);
+                } else {
+                    temp_supply += (new_deposit * temp_supply) / (new_deposit);
+                }
             }
         }
 
