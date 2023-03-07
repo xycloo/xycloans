@@ -59,25 +59,25 @@ fn test_successful_borrow() {
     let receiver_contract = env.register_contract_wasm(None, receiver_ctr::WASM);
     let receiver_client = receiver_ctr::Client::new(&env, &receiver_contract);
 
-    receiver_client.init(&token_id, &flash_loan_addr);
+    receiver_client.init(&token_id, &flash_loan_addr, &1000000);
 
     // These `100 $USDC` below are the profits the receiver contract would make. We simply mint the contract some tokens without performing any cdp or arbitrage trading action since it's beyond the scope of the quickstart.
     token.mint(
         &u1,
         &Address::from_contract_id(&env, &receiver_contract),
-        &100,
+        &1000,
     );
 
     // Borrowing from the lender, this invocation will result in an invocation to your receiver contract (the one you wrote in `lib.rs`)
     flash_loan_client.borrow(
         &Address::from_contract_id(&env, &receiver_contract),
         &receiver_contract,
-        &100000,
+        &1000000,
     );
 
     assert_eq!(
         token.balance(&Address::from_contract_id(&env, &receiver_contract)),
-        50
+        500
     );
 
     assert_eq!(

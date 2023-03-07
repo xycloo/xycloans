@@ -96,7 +96,7 @@ fn workflow() {
     let receiver_contract = e.register_contract_wasm(None, receiver_ctr::WASM);
     let receiver_client = receiver_ctr::Client::new(&e, &receiver_contract);
 
-    receiver_client.init(&token_id, &flash_loan_id);
+    receiver_client.init(&token_id, &flash_loan_id, &100000);
 
     // These `100 $USDC` below are the profits the receiver contract would make. We simply mint the contract some tokens without performing any cdp or arbitrage trading action since it's beyond the scope of the quickstart.
     usdc_token.mint(

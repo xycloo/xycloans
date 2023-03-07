@@ -36,7 +36,12 @@ impl receiver_interface::Contract for FlashLoanReceiverContract {
         */
 
         // Re-paying the loan + 0.05% interest
-        let total_amount = 100000 + compute_fee(&100000);
+        let borrowed = e
+            .storage()
+            .get::<Symbol, i128>(&symbol!("A"))
+            .unwrap()
+            .unwrap();
+        let total_amount = borrowed + compute_fee(&borrowed);
         token_client.incr_allow(
             &e.current_contract_address(),
             &e.storage()
@@ -52,9 +57,15 @@ impl receiver_interface::Contract for FlashLoanReceiverContract {
 
 #[contractimpl]
 impl FlashLoanReceiverContractExt {
-    pub fn init(e: Env, token_id: BytesN<32>, fl_address: Address) -> Result<(), ReceiverError> {
+    pub fn init(
+        e: Env,
+        token_id: BytesN<32>,
+        fl_address: Address,
+        amount: i128,
+    ) -> Result<(), ReceiverError> {
         e.storage().set(&symbol!("T"), &token_id);
         e.storage().set(&symbol!("FL"), &fl_address);
+        e.storage().set(&symbol!("A"), &amount);
         Ok(())
     }
 }
