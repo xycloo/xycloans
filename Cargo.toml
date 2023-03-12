@@ -4,6 +4,7 @@ members = [
     "flash-loan",
     "receiver-standard",
     "examples/simple",
+    "examples/gba-simple",
     "flash-loan-vault",
     "proxy",
 ]
