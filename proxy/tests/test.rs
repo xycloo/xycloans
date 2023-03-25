@@ -21,8 +21,8 @@ mod vault {
 }
 
 mod proxy {
+    use crate::vault::Error as VaultErr;
     use soroban_sdk::contractimport;
-
     contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_proxy.wasm");
 }
 
@@ -365,11 +365,11 @@ fn fee_withdrawal() {
     assert_eq!(token.balance(&flash_loan_id), 40000000000);
     assert_eq!(token.balance(&vault_id), 0);
 
-    let batch_0 = vault_client.get_shares(&lp, &0).unwrap();
+    let batch_0 = vault_client.get_shares(&lp, &0);
 
     proxy_client.fee_width(&lp, &token_id, &0, &300000000);
 
-    let updated_batch_0 = vault_client.get_shares(&lp, &0).unwrap();
+    let updated_batch_0 = vault_client.get_shares(&lp, &0);
 
     assert_eq!(updated_batch_0.curr_s, batch_0.curr_s - 300000000);
 }

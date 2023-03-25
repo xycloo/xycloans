@@ -2,7 +2,7 @@ use crate::{
     flash_loan,
     storage::*,
     token,
-    types::{BatchKey, BatchObj, DataKey},
+    types::{BatchKey, BatchObj, DataKey, Error},
 };
 use soroban_sdk::{contractimpl, log, Address, BytesN, Env, Vec};
 
@@ -13,17 +13,23 @@ pub trait VaultContractTrait {
         token_id: BytesN<32>,
         flash_loan: Address,
         flash_loan_bytes: BytesN<32>,
-    );
+    ) -> Result<(), Error>;
 
-    fn deposit(e: Env, admin: Address, from: Address, amount: i128) -> i128;
+    fn deposit(e: Env, admin: Address, from: Address, amount: i128) -> Result<i128, Error>;
 
-    fn fee_withd(e: Env, admin: Address, to: Address, batch_ts: i128, shares: i128);
+    fn fee_withd(
+        e: Env,
+        admin: Address,
+        to: Address,
+        batch_ts: i128,
+        shares: i128,
+    ) -> Result<(), Error>;
 
-    fn get_shares(e: Env, id: Address, batch_ts: i128) -> Option<BatchObj>;
+    fn get_shares(e: Env, id: Address, batch_ts: i128) -> Result<BatchObj, Error>;
 
-    fn batches(e: Env, id: Address) -> Vec<i128>;
+    fn batches(e: Env, id: Address) -> Result<Vec<i128>, Error>;
 
-    fn withdraw(e: Env, admin: Address, to: Address) -> i128;
+    fn withdraw(e: Env, admin: Address, to: Address) -> Result<i128, Error>;
 }
 
 pub struct VaultContract;
@@ -36,31 +42,33 @@ impl VaultContractTrait for VaultContract {
         token_id: BytesN<32>,
         flash_loan: Address,
         flash_loan_bytes: BytesN<32>,
-    ) {
-        log!(&e, "initializing");
+    ) -> Result<(), Error> {
+        //        log!(&e, "initializing");
 
         if has_administrator(&e) {
-            panic!("admin is already set");
+            return Err(Error::VaultAlreadyInitialized);
         }
 
         write_administrator(&e, admin);
         put_flash_loan(&e, flash_loan);
         put_flash_loan_bytes(&e, flash_loan_bytes);
         put_token_id(&e, token_id);
+
+        Ok(())
     }
 
-    fn deposit(e: Env, admin: Address, from: Address, amount: i128) -> i128 {
+    fn deposit(e: Env, admin: Address, from: Address, amount: i128) -> Result<i128, Error> {
         if read_admin(&e) != admin {
-            panic!("not the admin")
+            return Err(Error::InvalidAdminAuth);
         }
         admin.require_auth();
 
-        transfer_in_vault(&e, &from, &amount);
+        //        transfer_in_vault(&e, &from, &amount);
 
         let contract_id = get_token_id(&e);
         let token_client = token::Client::new(&e, &contract_id);
 
-        token_client.xfer(&get_contract_addr(&e), &get_flash_loan(&e), &amount);
+        token_client.xfer(&from, &get_flash_loan(&e), &amount);
 
         let tot_supply = get_tot_supply(&e);
 
@@ -71,25 +79,35 @@ impl VaultContractTrait for VaultContract {
         };
 
         e.storage().set(&DataKey::InitialDep(from.clone()), &amount);
-        mint_shares(&e, from, shares, amount)
+        Ok(mint_shares(&e, from, shares, amount))
     }
 
-    fn get_shares(e: Env, id: Address, batch_n: i128) -> Option<BatchObj> {
+    fn get_shares(e: Env, id: Address, batch_n: i128) -> Result<BatchObj, Error> {
         let key = DataKey::Batch(BatchKey(id, batch_n));
 
-        let batch: Option<BatchObj> = e.storage().get(&key).unwrap_or(Ok(None)).unwrap();
+        let batch = e.storage().get(&key);
 
-        batch
+        if let Some(Ok(batch_obj)) = batch {
+            Ok(batch_obj)
+        } else {
+            Err(Error::BatchDoesntExist)
+        }
     }
 
     // Batches returns an integer `current_n`. Batches are stored with key `BatchKey(Address, current_n)`, so having `current_n` and iterating up to it (0..n) will help to gather all of the user's batches (you'll still need to filter for batches that have been completely withdrawn, thus deleted).
-    fn batches(e: Env, id: Address) -> Vec<i128> {
-        get_user_batches(&e, id)
+    fn batches(e: Env, id: Address) -> Result<Vec<i128>, Error> {
+        Ok(get_user_batches(&e, id))
     }
 
-    fn fee_withd(e: Env, admin: Address, to: Address, batch_n: i128, shares: i128) {
+    fn fee_withd(
+        e: Env,
+        admin: Address,
+        to: Address,
+        batch_n: i128,
+        shares: i128,
+    ) -> Result<(), Error> {
         if read_admin(&e) != admin {
-            panic!("not the admin")
+            return Err(Error::InvalidAdminAuth);
         }
 
         admin.require_auth();
@@ -106,7 +124,7 @@ impl VaultContractTrait for VaultContract {
         let curr_s = batch.curr_s;
 
         if curr_s < shares {
-            panic!("not enough shares");
+            return Err(Error::InvalidShareBalance);
         }
 
         let new_deposit = deposit * (shares * 10000000 / init_s) / 10000000;
@@ -126,17 +144,19 @@ impl VaultContractTrait for VaultContract {
                 mint_shares(&e, to, new_shares, new_deposit);
             }
         }
+
+        Ok(())
     }
 
-    fn withdraw(e: Env, admin: Address, to: Address) -> i128 {
+    fn withdraw(e: Env, admin: Address, to: Address) -> Result<i128, Error> {
         if read_admin(&e) != admin {
-            panic!("not the admin")
+            return Err(Error::InvalidAdminAuth);
         }
 
         admin.require_auth();
 
         let batches = get_user_batches(&e, to.clone());
-        log!(&e, "batches {}", batches);
+        //        log!(&e, "batches {}", batches);
 
         let mut amount: i128 = 0;
         let mut temp_supply: i128 = get_tot_supply(&e);
@@ -150,7 +170,7 @@ impl VaultContractTrait for VaultContract {
                 let batch: BatchObj = e
                     .storage()
                     .get(&key.clone())
-                    .unwrap_or_else(|| panic!("no batch with this id"))
+                    .unwrap() // should be safe
                     .unwrap();
 
                 let deposit = batch.deposit;
@@ -185,6 +205,7 @@ impl VaultContractTrait for VaultContract {
         let fl_client = flash_loan::Client::new(&e, &fl_bytes_id);
         fl_client.withdraw(&get_contract_addr(&e), &initial_deposit, &to);
         transfer(&e, &to, amount);
-        amount
+
+        Ok(amount)
     }
 }

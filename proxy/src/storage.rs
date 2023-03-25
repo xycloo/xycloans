@@ -1,4 +1,5 @@
-use soroban_sdk::{Address, BytesN, Env};
+use crate::vault::Error as VaultErr;
+use soroban_sdk::{Address, BytesN, ConversionError, Env, Status};
 
 use crate::{
     flash_loan,
@@ -68,15 +69,17 @@ pub fn vault_withdraw_fees(
     token_contract_id: BytesN<32>,
     batch_n: i128,
     shares: i128,
-) -> Result<(), Error> {
+) -> Result<Result<Result<(), ConversionError>, Result<VaultErr, Status>>, Error> {
     let vault_client = vault::Client::new(env, &get_vault(env, token_contract_id)?);
-    vault_client.fee_withd(
+
+    let res = vault_client.try_fee_withd(
         &env.current_contract_address(),
         &provider,
         &batch_n,
         &shares,
     );
-    Ok(())
+
+    Ok(res)
 }
 
 pub fn flash_loan_borrow(

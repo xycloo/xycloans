@@ -58,7 +58,7 @@ fn workflow() {
 
     assert_eq!(usdc_token.balance(&user1), 500);
 
-    let _batch = vault_client.get_shares(&user1, &0);
+    //    let _batch = vault_client.get_shares(&user1, &0);
 
     vault_client.deposit(&user1, &user2, &1000);
 
@@ -78,7 +78,8 @@ fn workflow() {
     extern crate std;
     for batch_el in vault_client.batches(&user1).iter() {
         let el_u = batch_el.unwrap();
-        if let Some(batch) = vault_client.get_shares(&user1, &el_u) {
+        if let Ok(wrapped_batch) = vault_client.try_get_shares(&user1, &el_u) {
+            let batch = wrapped_batch.unwrap();
             std::println!(
                 "\n\n user 1 batch {:?} is {:?} {:?} {:?} \n",
                 el_u,
@@ -91,7 +92,8 @@ fn workflow() {
 
     for batch_el in vault_client.batches(&user2).iter() {
         let el_u = batch_el.unwrap();
-        if let Some(batch) = vault_client.get_shares(&user2, &el_u) {
+        if let Ok(wrapped_batch) = vault_client.try_get_shares(&user2, &el_u) {
+            let batch = wrapped_batch.unwrap();
             std::println!(
                 "\n\n user 2 batch {:?} is {:?} {:?} {:?} \n",
                 el_u,
@@ -128,7 +130,8 @@ fn workflow() {
 
     for batch_el in vault_client.batches(&user1).iter() {
         let el_u = batch_el.unwrap();
-        if let Some(batch) = vault_client.get_shares(&user1, &el_u) {
+        if let Ok(wrapped_batch) = vault_client.try_get_shares(&user1, &el_u) {
+            let batch = wrapped_batch.unwrap();
             std::println!(
                 "\n\n user 1 batch {:?} is {:?} {:?} {:?} \n",
                 el_u,
@@ -141,7 +144,8 @@ fn workflow() {
 
     for batch_el in vault_client.batches(&user2).iter() {
         let el_u = batch_el.unwrap();
-        if let Some(batch) = vault_client.get_shares(&user2, &el_u) {
+        if let Ok(wrapped_batch) = vault_client.try_get_shares(&user2, &el_u) {
+            let batch = wrapped_batch.unwrap();
             std::println!(
                 "\n\n user 2 batch {:?} is {:?} {:?} {:?} \n",
                 el_u,
