@@ -2,7 +2,7 @@ use soroban_sdk::{contractimpl, Address, BytesN, Env};
 
 use crate::storage::*;
 use crate::types::Error;
-use crate::vault::Client;
+use crate::vault::{Client, Error as VaultErr};
 
 pub struct ProxyCommon;
 pub struct ProxyLP;
@@ -28,7 +28,12 @@ pub trait AdminTrait {
 
 pub trait LPTrait {
     /// Deposit liquidity into an existing vault
-    fn deposit(env: Env, lender: Address, token_contract_id: BytesN<32>, amount: i128) -> i128;
+    fn deposit(
+        env: Env,
+        lender: Address,
+        token_contract_id: BytesN<32>,
+        amount: i128,
+    ) -> Result<i128, crate::vault::Error>;
 
     /// Withdraw fees for a certain amount of shares of a batch
     fn fee_width(
@@ -89,13 +94,23 @@ impl AdminTrait for ProxyCommon {
 
 #[contractimpl]
 impl LPTrait for ProxyLP {
-    fn deposit(env: Env, lender: Address, token_contract_id: BytesN<32>, amount: i128) -> i128 {
+    fn deposit(
+        env: Env,
+        lender: Address,
+        token_contract_id: BytesN<32>,
+        amount: i128,
+    ) -> Result<i128, crate::vault::Error> {
         lender.require_auth();
 
         let vault = get_vault(&env, token_contract_id).unwrap();
         let vault_client = Client::new(&env, &vault);
 
-        vault_client.deposit(&env.current_contract_address(), &lender, &amount)
+        let res = vault_client.try_deposit(&env.current_contract_address(), &lender, &amount);
+        if let Err(Ok(caught)) = res {
+            Err(caught)
+        } else {
+            Ok(res.unwrap().unwrap())
+        }
     }
 
     fn fee_width(
