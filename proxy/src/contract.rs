@@ -42,7 +42,7 @@ pub trait LPTrait {
         token_contract_id: BytesN<32>,
         batch_ts: i128,
         amount: i128,
-    ) -> Result<(), Error>;
+    ) -> Result<(), VaultErr>;
 }
 
 pub trait BorrowTrait {
@@ -99,7 +99,7 @@ impl LPTrait for ProxyLP {
         lender: Address,
         token_contract_id: BytesN<32>,
         amount: i128,
-    ) -> Result<i128, crate::vault::Error> {
+    ) -> Result<i128, VaultErr> {
         lender.require_auth();
 
         let vault = get_vault(&env, token_contract_id).unwrap();
@@ -119,9 +119,14 @@ impl LPTrait for ProxyLP {
         token_contract_id: BytesN<32>,
         batch_n: i128,
         shares: i128,
-    ) -> Result<(), Error> {
+    ) -> Result<(), VaultErr> {
         lender.require_auth();
-        vault_withdraw_fees(&env, lender, token_contract_id, batch_n, shares)?;
+        let res = vault_withdraw_fees(&env, lender, token_contract_id, batch_n, shares);
+
+        if let Ok(Err(Ok(err))) = res {
+            return Err(err);
+        }
+
         Ok(())
     }
 }

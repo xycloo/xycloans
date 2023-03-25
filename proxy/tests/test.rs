@@ -21,8 +21,8 @@ mod vault {
 }
 
 mod proxy {
+    use crate::vault::Error as VaultErr;
     use soroban_sdk::contractimport;
-
     contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_proxy.wasm");
 }
 
