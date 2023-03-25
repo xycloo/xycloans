@@ -17,7 +17,10 @@ pub enum DataKey {
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum Error {
-    Generic = 1,
+    VaultAlreadyInitialized = 0,
+    InvalidAdminAuth = 1,
+    InvalidShareBalance = 2,
+    BatchDoesntExist = 3,
 }
 
 #[derive(Clone)]
