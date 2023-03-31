@@ -29,7 +29,7 @@ pub trait VaultContractTrait {
 
     fn batches(e: Env, id: Address) -> Result<Vec<i128>, Error>;
 
-    fn withdraw(e: Env, admin: Address, to: Address) -> Result<i128, Error>;
+    fn withdraw(e: Env, admin: Address, to: Address) -> Result<(), Error>;
 }
 
 pub struct VaultContract;
@@ -78,8 +78,21 @@ impl VaultContractTrait for VaultContract {
             (amount * tot_supply) / (get_token_balance(&e) - amount)
         };
 
-        e.storage().set(&DataKey::InitialDep(from.clone()), &amount);
-        Ok(mint_shares(&e, from, shares, amount))
+        let increment = mint_shares(&e, from.clone(), shares, amount);
+
+        if increment != 0 {
+            let prev_deposit = e
+                .storage()
+                .get::<DataKey, i128>(&DataKey::InitialDep(from.clone()))
+                .unwrap()
+                .unwrap();
+            e.storage()
+                .set(&DataKey::InitialDep(from), &(prev_deposit + amount));
+        } else {
+            e.storage().set(&DataKey::InitialDep(from), &amount);
+        }
+
+        Ok(increment)
     }
 
     fn get_shares(e: Env, id: Address, batch_n: i128) -> Result<BatchObj, Error> {
@@ -148,7 +161,7 @@ impl VaultContractTrait for VaultContract {
         Ok(())
     }
 
-    fn withdraw(e: Env, admin: Address, to: Address) -> Result<i128, Error> {
+    fn withdraw(e: Env, admin: Address, to: Address) -> Result<(), Error> {
         if read_admin(&e) != admin {
             return Err(Error::InvalidAdminAuth);
         }
@@ -206,6 +219,6 @@ impl VaultContractTrait for VaultContract {
         fl_client.withdraw(&get_contract_addr(&e), &initial_deposit, &to);
         transfer(&e, &to, amount);
 
-        Ok(amount)
+        Ok(())
     }
 }
