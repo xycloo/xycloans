@@ -36,13 +36,15 @@ pub trait LPTrait {
     ) -> Result<i128, crate::vault::Error>;
 
     /// Withdraw fees for a certain amount of shares of a batch
-    fn fee_width(
+    fn fee_withd(
         env: Env,
         lender: Address,
         token_contract_id: BytesN<32>,
         batch_ts: i128,
         amount: i128,
     ) -> Result<(), VaultErr>;
+
+    fn liq_withd(env: Env, lender: Address, token_contract_id: BytesN<32>) -> Result<(), VaultErr>;
 }
 
 pub trait BorrowTrait {
@@ -113,7 +115,7 @@ impl LPTrait for ProxyLP {
         }
     }
 
-    fn fee_width(
+    fn fee_withd(
         env: Env,
         lender: Address,
         token_contract_id: BytesN<32>,
@@ -128,6 +130,20 @@ impl LPTrait for ProxyLP {
         }
 
         Ok(())
+    }
+
+    fn liq_withd(env: Env, lender: Address, token_contract_id: BytesN<32>) -> Result<(), VaultErr> {
+        lender.require_auth();
+
+        let vault = get_vault(&env, token_contract_id).unwrap();
+        let vault_client = Client::new(&env, &vault);
+
+        let res = vault_client.try_withdraw(&env.current_contract_address(), &lender);
+        if let Err(Ok(caught)) = res {
+            Err(caught)
+        } else {
+            Ok(())
+        }
     }
 }
 
