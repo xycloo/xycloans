@@ -1,6 +1,6 @@
 #![no_std]
 use receiver_interface::{Contract, ReceiverError};
-use soroban_sdk::{contractimpl, symbol, Address, BytesN, Env, Symbol};
+use soroban_sdk::{contractimpl, Address, BytesN, Env, Symbol};
 
 mod token {
     soroban_sdk::contractimport!(file = "../../soroban_token_spec.wasm");
@@ -26,7 +26,7 @@ impl receiver_interface::Contract for FlashLoanReceiverContract {
         let token_client = token::Client::new(
             &e,
             &e.storage()
-                .get::<Symbol, BytesN<32>>(&symbol!("T"))
+                .get::<Symbol, BytesN<32>>(&Symbol::short("T"))
                 .unwrap()
                 .unwrap(),
         );
@@ -38,14 +38,14 @@ impl receiver_interface::Contract for FlashLoanReceiverContract {
         // Re-paying the loan + 0.05% interest
         let borrowed = e
             .storage()
-            .get::<Symbol, i128>(&symbol!("A"))
+            .get::<Symbol, i128>(&Symbol::short("A"))
             .unwrap()
             .unwrap();
         let total_amount = borrowed + compute_fee(&borrowed);
         token_client.incr_allow(
             &e.current_contract_address(),
             &e.storage()
-                .get::<Symbol, Address>(&symbol!("FL"))
+                .get::<Symbol, Address>(&Symbol::short("FL"))
                 .unwrap()
                 .unwrap(),
             &total_amount,
@@ -63,9 +63,9 @@ impl FlashLoanReceiverContractExt {
         fl_address: Address,
         amount: i128,
     ) -> Result<(), ReceiverError> {
-        e.storage().set(&symbol!("T"), &token_id);
-        e.storage().set(&symbol!("FL"), &fl_address);
-        e.storage().set(&symbol!("A"), &amount);
+        e.storage().set(&Symbol::short("T"), &token_id);
+        e.storage().set(&Symbol::short("FL"), &fl_address);
+        e.storage().set(&Symbol::short("A"), &amount);
         Ok(())
     }
 }

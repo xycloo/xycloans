@@ -1,4 +1,4 @@
-use soroban_sdk::{symbol, Address, BytesN, Env, IntoVal, RawVal};
+use soroban_sdk::{Address, BytesN, Env, IntoVal, RawVal, Symbol};
 
 use crate::{
     token,
@@ -69,7 +69,7 @@ pub fn try_repay(e: &Env, receiver_id: &Address, amount: &i128) -> Result<(), Er
 }
 
 pub fn invoke_receiver(e: &Env, id: &BytesN<32>) {
-    e.invoke_contract::<RawVal>(id, &symbol!("exec_op"), ().into_val(e));
+    e.invoke_contract::<RawVal>(id, &Symbol::short("exec_op"), ().into_val(e));
 }
 
 pub fn get_contract_addr(e: &Env) -> Address {

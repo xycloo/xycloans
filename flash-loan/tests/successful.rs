@@ -2,7 +2,7 @@
 
 //use soroban_auth::{Identifier, Signature};
 use soroban_sdk::{
-    contractimpl, symbol,
+    contractimpl,
     testutils::{Address as _, Ledger, LedgerInfo},
     Address, BytesN, Env, IntoVal, Symbol,
 };
@@ -94,9 +94,7 @@ mod flash_loan_receiver_standard {
 
     use super::BalIncrementClient;
 
-    use soroban_sdk::{
-        contractimpl, symbol, testutils::Address as _, Address, BytesN, Env, Symbol,
-    };
+    use soroban_sdk::{contractimpl, testutils::Address as _, Address, BytesN, Env, Symbol};
 
     pub struct FlashLoanReceiver;
     pub struct FlashLoanReceiverExt;
@@ -109,14 +107,14 @@ mod flash_loan_receiver_standard {
     impl FlashLoanReceiver {
         pub fn init(e: Env, admin: Address, token: BytesN<32>) {
             admin.require_auth();
-            e.storage().set(&symbol!("T"), &token);
+            e.storage().set(&Symbol::short("T"), &token);
         }
 
         pub fn exec_op(e: Env) -> Result<(), receiver_interface::ReceiverError> {
             let token_client = token::Client::new(
                 &e,
                 &e.storage()
-                    .get::<Symbol, BytesN<32>>(&symbol!("T"))
+                    .get::<Symbol, BytesN<32>>(&Symbol::short("T"))
                     .unwrap()
                     .unwrap(),
             );
@@ -148,14 +146,14 @@ pub struct BalIncrement;
 impl BalIncrement {
     pub fn init(e: Env, admin: Address, token: BytesN<32>) {
         admin.require_auth();
-        e.storage().set(&symbol!("T"), &token);
+        e.storage().set(&Symbol::short("T"), &token);
     }
 
     pub fn increment(e: Env, id: Address, amount: i128) {
         let token_client = token::Client::new(
             &e,
             &e.storage()
-                .get::<Symbol, BytesN<32>>(&symbol!("T"))
+                .get::<Symbol, BytesN<32>>(&Symbol::short("T"))
                 .unwrap()
                 .unwrap(),
         );
@@ -167,7 +165,7 @@ impl BalIncrement {
         let token_client = token::Client::new(
             &e,
             &e.storage()
-                .get::<Symbol, BytesN<32>>(&symbol!("T"))
+                .get::<Symbol, BytesN<32>>(&Symbol::short("T"))
                 .unwrap()
                 .unwrap(),
         );

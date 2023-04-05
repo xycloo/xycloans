@@ -20,8 +20,8 @@ mod loan_ctr {
 
 use soroban_sdk::testutils::Logger;
 use soroban_sdk::testutils::{Ledger, LedgerInfo};
-use soroban_sdk::{symbol, vec, IntoVal, RawVal, Symbol};
 use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
+use soroban_sdk::{vec, IntoVal, RawVal, Symbol};
 
 #[test]
 fn workflow() {
@@ -54,7 +54,7 @@ fn workflow() {
 
     assert_eq!(usdc_token.balance(&user1), 500);
 
-    vault_client.fee_withd(&user1, &user1, &0, &500);
+    vault_client.withdraw_fee(&user1, &user1, &0, &500);
 
     assert_eq!(usdc_token.balance(&user1), 500);
 
@@ -66,12 +66,12 @@ fn workflow() {
 
     let _batch = vault_client.get_shares(&user2, &0);
 
-    vault_client.fee_withd(&user1, &user2, &0, &1000);
+    vault_client.withdraw_fee(&user1, &user2, &0, &1000);
 
     // fees arrive
     usdc_token.mint(&admin1, &vault_id, &(100));
 
-    vault_client.fee_withd(&user1, &user2, &1, &500);
+    vault_client.withdraw_fee(&user1, &user2, &1, &500);
 
     let _batch = vault_client.get_shares(&user2, &1);
 
@@ -193,13 +193,13 @@ fn workflow_withdraw_position() {
     vault_client.deposit(&user1, &user2, &100000000000);
     assert_eq!(usdc_token.balance(&user2), 0);
 
-    vault_client.fee_withd(&user1, &user2, &0, &100000000000);
+    vault_client.withdraw_fee(&user1, &user2, &0, &100000000000);
     assert_eq!(usdc_token.balance(&user2), 0);
 
     // fees arrive
     usdc_token.mint(&admin1, &vault_id, &10000);
 
-    vault_client.fee_withd(&user1, &user2, &1, &100000000000);
+    vault_client.withdraw_fee(&user1, &user2, &1, &100000000000);
     assert_eq!(usdc_token.balance(&user2), 6666);
 
     vault_client.withdraw(&user1, &user1);
@@ -237,7 +237,7 @@ fn vault_admin_auth() {
     let expected_auth: Vec<(Address, BytesN<32>, Symbol, soroban_sdk::Vec<RawVal>)> = std::vec![(
         user1.clone(),
         vault_contract_id.clone(),
-        symbol!("deposit"),
+        Symbol::short("deposit"),
         vec![
             &e,
             user1.into_val(&e),
@@ -247,11 +247,11 @@ fn vault_admin_auth() {
     )];
     assert_eq!(e.recorded_top_authorizations(), expected_auth);
 
-    vault_client.fee_withd(&user1, &user1, &0, &500);
+    vault_client.withdraw_fee(&user1, &user1, &0, &500);
     let expected_auth: Vec<(Address, BytesN<32>, Symbol, soroban_sdk::Vec<RawVal>)> = std::vec![(
         user1.clone(),
         vault_contract_id.clone(),
-        symbol!("fee_withd"),
+        Symbol::new(&e, "withdraw_fee"),
         vec![
             &e,
             user1.into_val(&e),
@@ -266,7 +266,7 @@ fn vault_admin_auth() {
     let expected_auth: Vec<(Address, BytesN<32>, Symbol, soroban_sdk::Vec<RawVal>)> = std::vec![(
         user1.clone(),
         vault_contract_id,
-        symbol!("withdraw"),
+        Symbol::short("withdraw"),
         vec![&e, user1.into_val(&e), user1.into_val(&e),],
     )];
     assert_eq!(e.recorded_top_authorizations(), expected_auth);
@@ -304,7 +304,7 @@ fn vault_admin_invalid_auth() {
     let _res = vault_client.try_deposit(&not_user1, &user1, &500);
     assert_eq!(e.recorded_top_authorizations(), []);
 
-    let _res = vault_client.try_fee_withd(&not_user1, &user1, &0, &500);
+    let _res = vault_client.try_withdraw_fee(&not_user1, &user1, &0, &500);
     assert_eq!(e.recorded_top_authorizations(), []);
 
     let _res = vault_client.try_withdraw(&not_user1, &user1);

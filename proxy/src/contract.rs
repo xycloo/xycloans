@@ -18,7 +18,7 @@ pub trait AdminTrait {
         vault_contract_id: BytesN<32>,
     ) -> Result<(), Error>;
 
-    fn set_fl(
+    fn set_flash_loan(
         env: Env,
         admin: Address,
         token_contract_id: BytesN<32>,
@@ -33,18 +33,18 @@ pub trait LPTrait {
         lender: Address,
         token_contract_id: BytesN<32>,
         amount: i128,
-    ) -> Result<i128, crate::vault::Error>;
+    ) -> Result<(), Error>;
 
     /// Withdraw fees for a certain amount of shares of a batch
-    fn fee_withd(
+    fn withdraw_fee(
         env: Env,
         lender: Address,
         token_contract_id: BytesN<32>,
         batch_ts: i128,
         amount: i128,
-    ) -> Result<(), VaultErr>;
+    ) -> Result<(), Error>;
 
-    fn liq_withd(env: Env, lender: Address, token_contract_id: BytesN<32>) -> Result<(), VaultErr>;
+    fn withdraw_all(env: Env, lender: Address, token_contract_id: BytesN<32>) -> Result<(), Error>;
 }
 
 pub trait BorrowTrait {
@@ -81,7 +81,7 @@ impl AdminTrait for ProxyCommon {
         Ok(())
     }
 
-    fn set_fl(
+    fn set_flash_loan(
         env: Env,
         admin: Address,
         token_contract_id: BytesN<32>,
@@ -101,49 +101,37 @@ impl LPTrait for ProxyLP {
         lender: Address,
         token_contract_id: BytesN<32>,
         amount: i128,
-    ) -> Result<i128, VaultErr> {
+    ) -> Result<(), Error> {
         lender.require_auth();
 
-        let vault = get_vault(&env, token_contract_id).unwrap();
+        let vault = get_vault(&env, token_contract_id)?;
         let vault_client = Client::new(&env, &vault);
 
-        let res = vault_client.try_deposit(&env.current_contract_address(), &lender, &amount);
-        if let Err(Ok(caught)) = res {
-            Err(caught)
-        } else {
-            Ok(res.unwrap().unwrap())
-        }
+        vault_client.deposit(&env.current_contract_address(), &lender, &amount);
+        Ok(())
     }
 
-    fn fee_withd(
+    fn withdraw_fee(
         env: Env,
         lender: Address,
         token_contract_id: BytesN<32>,
         batch_n: i128,
         shares: i128,
-    ) -> Result<(), VaultErr> {
+    ) -> Result<(), Error> {
         lender.require_auth();
-        let res = vault_withdraw_fees(&env, lender, token_contract_id, batch_n, shares);
-
-        if let Ok(Err(Ok(err))) = res {
-            return Err(err);
-        }
+        vault_withdraw_fees(&env, lender, token_contract_id, batch_n, shares)?;
 
         Ok(())
     }
 
-    fn liq_withd(env: Env, lender: Address, token_contract_id: BytesN<32>) -> Result<(), VaultErr> {
+    fn withdraw_all(env: Env, lender: Address, token_contract_id: BytesN<32>) -> Result<(), Error> {
         lender.require_auth();
 
-        let vault = get_vault(&env, token_contract_id).unwrap();
+        let vault = get_vault(&env, token_contract_id)?;
         let vault_client = Client::new(&env, &vault);
 
-        let res = vault_client.try_withdraw(&env.current_contract_address(), &lender);
-        if let Err(Ok(caught)) = res {
-            Err(caught)
-        } else {
-            Ok(())
-        }
+        vault_client.withdraw(&env.current_contract_address(), &lender);
+        Ok(())
     }
 }
 

@@ -1,7 +1,7 @@
 #![cfg(test)]
 use soroban_sdk::testutils::{Ledger, LedgerInfo};
-use soroban_sdk::{symbol, vec, IntoVal, RawVal, Symbol};
 use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
+use soroban_sdk::{vec, IntoVal, RawVal, Symbol};
 
 mod token {
     use soroban_sdk::contractimport;
@@ -77,7 +77,7 @@ fn successful_borrow() {
     );
 
     proxy_client.set_vault(&protocol, &token_id, &vault_contract_id);
-    proxy_client.set_fl(&protocol, &token_id, &flash_loan_contract_id);
+    proxy_client.set_flash_loan(&protocol, &token_id, &flash_loan_contract_id);
 
     usdc_token.mint(&token_admin, &lp, &1000000);
     proxy_client.deposit(&lp, &token_id, &1000000);
@@ -143,7 +143,7 @@ fn unsuccessful_borrow() {
     );
 
     proxy_client.set_vault(&protocol, &token_id, &vault_contract_id);
-    proxy_client.set_fl(&protocol, &token_id, &flash_loan_contract_id);
+    proxy_client.set_flash_loan(&protocol, &token_id, &flash_loan_contract_id);
 
     usdc_token.mint(&token_admin, &lp, &1000000);
     proxy_client.deposit(&lp, &token_id, &1000000);
@@ -201,7 +201,7 @@ fn deposit() {
     );
 
     proxy_client.set_vault(&protocol, &token_id, &vault_contract_id);
-    proxy_client.set_fl(&protocol, &token_id, &flash_loan_contract_id);
+    proxy_client.set_flash_loan(&protocol, &token_id, &flash_loan_contract_id);
 
     proxy_client.deposit(&lp, &token_id, &10000000);
 
@@ -250,7 +250,7 @@ fn proxy_admin_auth() {
     let expected_auth: Vec<(Address, BytesN<32>, Symbol, soroban_sdk::Vec<RawVal>)> = std::vec![(
         protocol.clone(),
         proxy_contract_id.clone(),
-        symbol!("set_vault"),
+        Symbol::short("set_vault"),
         vec![
             &e,
             protocol.into_val(&e),
@@ -260,11 +260,11 @@ fn proxy_admin_auth() {
     )];
     assert_eq!(e.recorded_top_authorizations(), expected_auth);
 
-    proxy_client.set_fl(&protocol, &token_id, &flash_loan_contract_id);
+    proxy_client.set_flash_loan(&protocol, &token_id, &flash_loan_contract_id);
     let expected_auth: Vec<(Address, BytesN<32>, Symbol, soroban_sdk::Vec<RawVal>)> = std::vec![(
         protocol.clone(),
         proxy_contract_id,
-        symbol!("set_fl"),
+        Symbol::new(&e, "set_flash_loan"),
         vec![
             &e,
             protocol.into_val(&e),
@@ -316,7 +316,8 @@ fn proxy_invalid_admin_auth() {
     let _set_vault_res = proxy_client.try_set_vault(&not_protocol, &token_id, &vault_contract_id);
     assert_eq!(e.recorded_top_authorizations(), []);
 
-    let _set_fl_res = proxy_client.try_set_fl(&not_protocol, &token_id, &flash_loan_contract_id);
+    let _set_flash_loan_res =
+        proxy_client.try_set_flash_loan(&not_protocol, &token_id, &flash_loan_contract_id);
     assert_eq!(e.recorded_top_authorizations(), []);
 }
 
@@ -357,7 +358,7 @@ fn fee_withdrawal() {
     );
 
     proxy_client.set_vault(&protocol, &token_id, &vault_contract_id);
-    proxy_client.set_fl(&protocol, &token_id, &flash_loan_contract_id);
+    proxy_client.set_flash_loan(&protocol, &token_id, &flash_loan_contract_id);
 
     proxy_client.deposit(&lp, &token_id, &40000000000);
 
@@ -367,7 +368,7 @@ fn fee_withdrawal() {
 
     let batch_0 = vault_client.get_shares(&lp, &0);
 
-    proxy_client.fee_withd(&lp, &token_id, &0, &300000000);
+    proxy_client.withdraw_fee(&lp, &token_id, &0, &300000000);
 
     let updated_batch_0 = vault_client.get_shares(&lp, &0);
 
@@ -411,7 +412,7 @@ fn liquidity_withdrawal() {
     );
 
     proxy_client.set_vault(&protocol, &token_id, &vault_contract_id);
-    proxy_client.set_fl(&protocol, &token_id, &flash_loan_contract_id);
+    proxy_client.set_flash_loan(&protocol, &token_id, &flash_loan_contract_id);
 
     proxy_client.deposit(&lp, &token_id, &40000000000);
     proxy_client.deposit(&lp, &token_id, &10000000000);
@@ -422,7 +423,7 @@ fn liquidity_withdrawal() {
     assert_eq!(token.balance(&flash_loan_id), 50000000000);
     assert_eq!(token.balance(&vault_id), 1000000);
 
-    proxy_client.liq_withd(&lp, &token_id);
+    proxy_client.withdraw_all(&lp, &token_id);
 
     assert_eq!(token.balance(&lp), 50000000000 + 1000000);
 }

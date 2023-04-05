@@ -17,7 +17,7 @@ pub trait VaultContractTrait {
 
     fn deposit(e: Env, admin: Address, from: Address, amount: i128) -> Result<i128, Error>;
 
-    fn fee_withd(
+    fn withdraw_fee(
         e: Env,
         admin: Address,
         to: Address,
@@ -112,7 +112,7 @@ impl VaultContractTrait for VaultContract {
         Ok(get_user_batches(&e, id))
     }
 
-    fn fee_withd(
+    fn withdraw_fee(
         e: Env,
         admin: Address,
         to: Address,

@@ -69,17 +69,17 @@ pub fn vault_withdraw_fees(
     token_contract_id: BytesN<32>,
     batch_n: i128,
     shares: i128,
-) -> Result<Result<Result<(), ConversionError>, Result<VaultErr, Status>>, Error> {
+) -> Result<(), Error> {
     let vault_client = vault::Client::new(env, &get_vault(env, token_contract_id)?);
 
-    let res = vault_client.try_fee_withd(
+    vault_client.withdraw_fee(
         &env.current_contract_address(),
         &provider,
         &batch_n,
         &shares,
     );
 
-    Ok(res)
+    Ok(())
 }
 
 pub fn flash_loan_borrow(
