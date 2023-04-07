@@ -1,10 +1,12 @@
 use crate::{
     flash_loan,
+    math::{compute_deposit_ratio, compute_fee_amount, compute_shares_amount},
     storage::*,
-    token,
-    types::{BatchKey, BatchObj, DataKey, Error},
+    types::{BatchObj, Error},
 };
-use soroban_sdk::{contractimpl, Address, BytesN, Env, Vec};
+use soroban_sdk::{contractimpl, Address, BytesN, Env};
+
+pub const SCALAR: i128 = 10;
 
 pub trait VaultContractTrait {
     fn initialize(
@@ -27,7 +29,7 @@ pub trait VaultContractTrait {
 
     fn get_shares(e: Env, id: Address, batch_ts: i128) -> Result<BatchObj, Error>;
 
-    fn batches(e: Env, id: Address) -> Result<Vec<i128>, Error>;
+    fn get_increment(e: Env, id: Address) -> Result<i128, Error>;
 
     fn withdraw(e: Env, admin: Address, to: Address) -> Result<(), Error>;
 }
@@ -56,56 +58,31 @@ impl VaultContractTrait for VaultContract {
     }
 
     fn deposit(e: Env, admin: Address, from: Address, amount: i128) -> Result<i128, Error> {
-        if read_admin(&e) != admin {
-            return Err(Error::InvalidAdminAuth);
-        }
-        admin.require_auth();
+        auth_admin(&e, admin)?;
 
-        let contract_id = get_token_id(&e);
-        let token_client = token::Client::new(&e, &contract_id);
+        // construct the token client we'll use later on
+        let token_client = get_token_client(&e);
 
-        token_client.transfer(&from, &get_flash_loan(&e), &amount);
-
-        let tot_supply = get_tot_supply(&e);
-
-        let shares = if 0 == tot_supply {
+        // calculate the number of shares to mint
+        let total_supply = get_tot_supply(&e);
+        let shares = if 0 == total_supply {
             amount
         } else {
-            (amount * tot_supply) / (get_token_balance(&e) - amount)
+            compute_shares_amount(amount, total_supply, get_token_balance(&e, &token_client))
         };
 
-        let increment = mint_shares(&e, from.clone(), shares, amount);
+        // transfer the funds into the flash loan
+        transfer_into_flash_loan(&e, &token_client, &from, &amount);
 
+        let increment = mint_shares(&e, from.clone(), shares, amount);
         if increment != 0 {
-            let prev_deposit = e
-                .storage()
-                .get::<DataKey, i128>(&DataKey::InitialDep(from.clone()))
-                .unwrap()
-                .unwrap();
-            e.storage()
-                .set(&DataKey::InitialDep(from), &(prev_deposit + amount));
+            let total_deposit = get_initial_deposit(&e, from.clone()) + amount;
+            set_initial_deposit(&e, from, total_deposit);
         } else {
-            e.storage().set(&DataKey::InitialDep(from), &amount);
+            set_initial_deposit(&e, from, amount);
         }
 
         Ok(increment)
-    }
-
-    fn get_shares(e: Env, id: Address, batch_n: i128) -> Result<BatchObj, Error> {
-        let key = DataKey::Batch(BatchKey(id, batch_n));
-
-        let batch = e.storage().get(&key);
-
-        if let Some(Ok(batch_obj)) = batch {
-            Ok(batch_obj)
-        } else {
-            Err(Error::BatchDoesntExist)
-        }
-    }
-
-    // Batches returns an integer `current_n`. Batches are stored with key `BatchKey(Address, current_n)`, so having `current_n` and iterating up to it (0..n) will help to gather all of the user's batches (you'll still need to filter for batches that have been completely withdrawn, thus deleted).
-    fn batches(e: Env, id: Address) -> Result<Vec<i128>, Error> {
-        Ok(get_user_batches(&e, id))
     }
 
     fn withdraw_fee(
@@ -115,86 +92,67 @@ impl VaultContractTrait for VaultContract {
         batch_n: i128,
         shares: i128,
     ) -> Result<(), Error> {
-        if read_admin(&e) != admin {
-            return Err(Error::InvalidAdminAuth);
-        }
+        auth_admin(&e, admin)?;
 
-        admin.require_auth();
+        // construct the token client we'll use later on
+        let token_client = get_token_client(&e);
 
-        let tot_supply = get_tot_supply(&e);
-        let tot_bal = get_token_balance(&e);
-        let batch: BatchObj = e
-            .storage()
-            .get(&DataKey::Batch(BatchKey(to.clone(), batch_n)))
-            .unwrap()
-            .unwrap();
-        let deposit = batch.deposit;
-        let init_s = batch.init_s;
-        let curr_s = batch.curr_s;
+        if let Some(Ok(batch)) = get_batch(&e, to.clone(), batch_n) {
+            let total_supply = get_tot_supply(&e);
+            let total_balance = get_token_balance(&e, &token_client);
 
-        if curr_s < shares {
-            return Err(Error::InvalidShareBalance);
-        }
+            if batch.curr_s < shares {
+                return Err(Error::InvalidShareBalance);
+            }
 
-        let new_deposit = deposit * (shares * 10000000 / init_s) / 10000000;
+            let new_deposit = compute_deposit_ratio(batch.deposit, shares, batch.init_s);
+            let fee_amount = compute_fee_amount(new_deposit, shares, total_supply, total_balance);
 
-        let fee_amount = ((tot_bal * shares) / tot_supply) - new_deposit;
-        if fee_amount >= 0 {
             transfer(&e, &to, fee_amount);
             burn_shares(&e, to.clone(), shares, batch_n);
-            let new_tot_supply = get_tot_supply(&e);
-            let new_tot_bal = get_token_balance(&e);
 
-            if tot_bal != new_deposit {
-                let new_shares = (new_deposit * new_tot_supply) / (new_tot_bal - new_deposit);
-                mint_shares(&e, to, new_shares, new_deposit);
+            let new_tot_supply = total_supply - shares;
+            let new_tot_bal = total_balance - fee_amount;
+
+            let new_shares = if total_balance != new_deposit {
+                compute_shares_amount(new_deposit, new_tot_supply, new_tot_bal - new_deposit)
             } else {
-                let new_shares = (new_deposit * tot_supply) / new_deposit;
-                mint_shares(&e, to, new_shares, new_deposit);
-            }
+                compute_shares_amount(new_deposit, total_supply, new_deposit)
+            };
+
+            mint_shares(&e, to, new_shares, new_deposit);
+        } else {
+            return Err(Error::BatchDoesntExist);
         }
 
         Ok(())
     }
 
     fn withdraw(e: Env, admin: Address, to: Address) -> Result<(), Error> {
-        if read_admin(&e) != admin {
-            return Err(Error::InvalidAdminAuth);
-        }
+        auth_admin(&e, admin)?;
 
-        admin.require_auth();
+        // construct the token client we'll use later on
+        let token_client = get_token_client(&e);
 
-        let batches = get_user_batches(&e, to.clone());
-        //        log!(&e, "batches {}", batches);
+        let increment = get_increment(&e, to.clone());
 
         let mut amount: i128 = 0;
         let mut temp_supply: i128 = get_tot_supply(&e);
-        let mut temp_balance: i128 = get_token_balance(&e);
+        let mut temp_balance: i128 = get_token_balance(&e, &token_client);
 
-        for batch_el in batches.iter() {
-            let batch_n = batch_el.unwrap();
-            let key = DataKey::Batch(BatchKey(to.clone(), batch_n));
-
-            if e.storage().has(&key) {
-                let batch: BatchObj = e
-                    .storage()
-                    .get(&key.clone())
-                    .unwrap() // should be safe
-                    .unwrap();
-
-                let deposit = batch.deposit;
-                let init_s = batch.init_s;
-                let curr_s = batch.curr_s;
-
-                let new_deposit = deposit * (curr_s * 10000000 / init_s) / 10000000;
-                let fee_amount = ((temp_balance * curr_s) / temp_supply) - new_deposit;
+        for batch_n in 0..increment {
+            if let Some(Ok(batch)) = get_batch(&e, to.clone(), batch_n) {
+                let withdrawable_shares = batch.curr_s;
+                let new_deposit =
+                    compute_deposit_ratio(batch.deposit, withdrawable_shares, batch.init_s);
+                let fee_amount =
+                    compute_fee_amount(new_deposit, withdrawable_shares, temp_supply, temp_balance);
 
                 amount += fee_amount;
-
                 temp_balance -= fee_amount;
-                temp_supply -= curr_s;
+                temp_supply -= withdrawable_shares;
 
-                burn_shares(&e, to.clone(), curr_s, batch_n);
+                burn_shares(&e, to.clone(), withdrawable_shares, batch_n);
 
                 if temp_balance != new_deposit {
                     temp_supply += (new_deposit * temp_supply) / (temp_balance - new_deposit);
@@ -204,17 +162,24 @@ impl VaultContractTrait for VaultContract {
             }
         }
 
-        let initial_deposit = e
-            .storage()
-            .get::<DataKey, i128>(&DataKey::InitialDep(to.clone()))
-            .unwrap()
-            .unwrap();
-
-        let fl_bytes_id = get_flash_loan_bytes(&e);
-        let fl_client = flash_loan::Client::new(&e, &fl_bytes_id);
-        fl_client.withdraw(&get_contract_addr(&e), &initial_deposit, &to);
+        let initial_deposit = get_initial_deposit(&e, to.clone());
+        let flash_loan_id_bytes = get_flash_loan_bytes(&e);
+        let flash_loan_client = flash_loan::Client::new(&e, &flash_loan_id_bytes);
+        flash_loan_client.withdraw(&get_contract_addr(&e), &initial_deposit, &to);
         transfer(&e, &to, amount);
 
         Ok(())
+    }
+
+    fn get_shares(e: Env, id: Address, batch_n: i128) -> Result<BatchObj, Error> {
+        if let Some(Ok(batch_obj)) = get_batch(&e, id, batch_n) {
+            Ok(batch_obj)
+        } else {
+            Err(Error::BatchDoesntExist)
+        }
+    }
+
+    fn get_increment(e: Env, id: Address) -> Result<i128, Error> {
+        Ok(get_increment(&e, id))
     }
 }
