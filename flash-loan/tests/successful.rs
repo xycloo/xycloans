@@ -1,13 +1,7 @@
 #![cfg(test)]
 
-//use soroban_auth::{Identifier, Signature};
-use soroban_sdk::{
-    contractimpl,
-    testutils::{Address as _, Ledger, LedgerInfo},
-    Address, BytesN, Env, IntoVal, Symbol,
-};
-
 use crate::flash_loan_receiver_standard::FlashLoanReceiverClient;
+use soroban_sdk::{contractimpl, testutils::Address as _, Address, BytesN, Env, Symbol};
 
 mod token {
     use soroban_sdk::contractimport;
@@ -30,16 +24,8 @@ mod receiver_interface {
 }
 
 #[test]
-fn test_successful_borrow() {
+fn successful_borrow() {
     let env = Env::default();
-    /*
-    env.ledger().set(LedgerInfo {
-        timestamp: 1669726145,
-        protocol_version: 1,
-        sequence_number: 10,
-        network_id: Default::default(),
-        base_reserve: 10,
-    });*/
 
     let u1 = Address::random(&env);
     let lp1 = Address::random(&env);
@@ -65,15 +51,15 @@ fn test_successful_borrow() {
     receiver_client.init(&u1, &id);
     increment_client.init(&u1, &id);
 
-    token.mint(&u1, &lp1, &1000000000);
+    token.mint(&lp1, &1000000000);
 
-    token.mint(&u1, &increment_contract_id, &1000000000);
+    token.mint(&increment_contract_id, &1000000000);
 
     flash_loan_client.init(&id, &lp1);
 
-    token.xfer(&lp1, &flash_loan_contract_id, &1000000000);
+    token.transfer(&lp1, &flash_loan_contract_id, &1000000000);
 
-    flash_loan_client.borrow(&receiver_contract_id, &receiver_contract, &100000);
+    flash_loan_client.borrow(&receiver_contract_id, &100000);
 
     assert_eq!(token.balance(&receiver_contract_id), 50);
     assert_eq!(token.balance(&flash_loan_contract_id), 1000000000);
@@ -90,17 +76,14 @@ fn test_successful_borrow() {
 }
 
 mod flash_loan_receiver_standard {
-    use crate::{receiver_interface, receiver_interface::Contract, token};
-
     use super::BalIncrementClient;
-
-    use soroban_sdk::{contractimpl, testutils::Address as _, Address, BytesN, Env, Symbol};
+    use crate::{receiver_interface, token};
+    use soroban_sdk::{contractimpl, Address, BytesN, Env, Symbol};
 
     pub struct FlashLoanReceiver;
-    pub struct FlashLoanReceiverExt;
 
     fn compute_fee(amount: &i128) -> i128 {
-        5 * amount / 10000 // 0.05%, still TBD
+        amount / 200 // 0.05%, still TBD
     }
 
     #[contractimpl]
@@ -120,7 +103,7 @@ mod flash_loan_receiver_standard {
             );
             let client = BalIncrementClient::new(&e, &BytesN::from_array(&e, &[2; 32]));
 
-            token_client.xfer(
+            token_client.transfer(
                 &e.current_contract_address(),
                 &Address::from_contract_id(&e, &BytesN::from_array(&e, &[2; 32])),
                 &100000,
@@ -129,7 +112,7 @@ mod flash_loan_receiver_standard {
 
             let total_amount = 100000 + compute_fee(&100000);
 
-            token_client.incr_allow(
+            token_client.increase_allowance(
                 &e.current_contract_address(),
                 &Address::from_contract_id(&e, &BytesN::from_array(&e, &[5; 32])),
                 &total_amount,
@@ -158,7 +141,7 @@ impl BalIncrement {
                 .unwrap(),
         );
 
-        token_client.xfer(&e.current_contract_address(), &id, &(amount + 100))
+        token_client.transfer(&e.current_contract_address(), &id, &(amount + 100))
     }
 
     pub fn decrement(e: Env, id: Address, amount: i128) {
@@ -170,6 +153,6 @@ impl BalIncrement {
                 .unwrap(),
         );
 
-        token_client.xfer(&e.current_contract_address(), &id, &(amount - 100))
+        token_client.transfer(&e.current_contract_address(), &id, &(amount - 100))
     }
 }

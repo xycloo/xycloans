@@ -4,7 +4,7 @@ use crate::{
     token,
     types::{BatchKey, BatchObj, DataKey, Error},
 };
-use soroban_sdk::{contractimpl, log, Address, BytesN, Env, Vec};
+use soroban_sdk::{contractimpl, Address, BytesN, Env, Vec};
 
 pub trait VaultContractTrait {
     fn initialize(
@@ -43,8 +43,6 @@ impl VaultContractTrait for VaultContract {
         flash_loan: Address,
         flash_loan_bytes: BytesN<32>,
     ) -> Result<(), Error> {
-        //        log!(&e, "initializing");
-
         if has_administrator(&e) {
             return Err(Error::VaultAlreadyInitialized);
         }
@@ -63,12 +61,10 @@ impl VaultContractTrait for VaultContract {
         }
         admin.require_auth();
 
-        //        transfer_in_vault(&e, &from, &amount);
-
         let contract_id = get_token_id(&e);
         let token_client = token::Client::new(&e, &contract_id);
 
-        token_client.xfer(&from, &get_flash_loan(&e), &amount);
+        token_client.transfer(&from, &get_flash_loan(&e), &amount);
 
         let tot_supply = get_tot_supply(&e);
 

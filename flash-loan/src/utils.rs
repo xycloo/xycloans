@@ -1,9 +1,6 @@
 use soroban_sdk::{Address, BytesN, Env, IntoVal, RawVal, Symbol};
 
-use crate::{
-    token,
-    types::{DataKey, Error},
-};
+use crate::{token, types::DataKey};
 
 pub fn is_initialized(e: &Env) -> bool {
     e.storage().has(&DataKey::TokenId)
@@ -15,7 +12,7 @@ pub fn set_token(e: &Env, id: BytesN<32>) {
 }
 
 fn compute_fee(amount: &i128) -> i128 {
-    5 * amount / 10000 // 0.05%, still TBD
+    amount / 200 // 0.05%, still TBD
 }
 
 pub fn get_token_id(e: &Env) -> BytesN<32> {
@@ -30,42 +27,25 @@ pub fn _get_token_balance(e: &Env) -> i128 {
     client.balance(&get_contract_addr(e))
 }
 
-pub fn transfer(e: &Env, to: &Address, amount: &i128) -> Result<(), Error> {
-    let token_id: BytesN<32> = get_token_id(e);
-    let client = token::Client::new(e, &token_id);
+pub fn transfer(e: &Env, client: &token::Client, to: &Address, amount: &i128) {
+    //    let token_id: BytesN<32> = get_token_id(e);
+    //    let client = token::Client::new(e, &token_id);
 
-    let xfer_result = client.try_xfer(&get_contract_addr(e), to, amount);
-
-    // TODO: more explicit handling
-    match xfer_result {
-        Ok(Ok(())) => Ok(()),
-        Ok(Err(_)) => Err(Error::GenericLend),
-        Err(_) => Err(Error::GenericLend),
-    }
+    client.transfer(&get_contract_addr(e), to, amount);
 }
 
-pub fn xfer_from_to_fl(e: &Env, from: &Address, amount: &i128) -> Result<(), Error> {
-    let token_id: BytesN<32> = get_token_id(e);
-    let client = token::Client::new(e, &token_id);
+pub fn xfer_from_to_fl(e: &Env, client: &token::Client, from: &Address, amount: &i128) {
+    //    let token_id: BytesN<32> = get_token_id(e);
+    //    let client = token::Client::new(e, &token_id);
 
-    let xfer_from_result =
-        client.try_xfer_from(&get_contract_addr(e), from, &get_contract_addr(e), amount);
-
-    // TODO: more explicit handling
-    match xfer_from_result {
-        Ok(Ok(())) => Ok(()),
-        Ok(Err(_)) => Err(Error::GenericRepay),
-        Err(_) => Err(Error::GenericRepay),
-    }
+    client.transfer_from(&get_contract_addr(e), from, &get_contract_addr(e), amount);
 }
 
-pub fn try_repay(e: &Env, receiver_id: &Address, amount: &i128) -> Result<(), Error> {
+pub fn try_repay(e: &Env, client: &token::Client, receiver_id: &Address, amount: &i128) {
     let fees = compute_fee(amount);
 
-    xfer_from_to_fl(e, receiver_id, &(amount + fees))?;
-    transfer(e, &get_lp(e), &fees)?;
-
-    Ok(())
+    xfer_from_to_fl(e, client, receiver_id, &(amount + fees));
+    transfer(e, client, &get_lp(e), &fees);
 }
 
 pub fn invoke_receiver(e: &Env, id: &BytesN<32>) {
@@ -76,7 +56,7 @@ pub fn get_contract_addr(e: &Env) -> Address {
     e.current_contract_address()
 }
 
-pub fn has_lp(e: &Env) -> bool {
+pub fn _has_lp(e: &Env) -> bool {
     e.storage().has(&DataKey::LP)
 }
 
