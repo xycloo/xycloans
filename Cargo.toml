@@ -5,7 +5,7 @@ members = [
     "receiver-standard",
     "examples/simple",
     "examples/gba-simple",
-    "flash-loan-vault",
+    "vault",
     "proxy",
 ]
 
