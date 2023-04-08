@@ -1,6 +1,6 @@
 #![no_std]
 use receiver_interface::{Contract, ReceiverError};
-use soroban_sdk::{contractimpl, symbol, Address, BytesN, Env, Symbol};
+use soroban_sdk::{contractimpl, Address, BytesN, Env, Symbol};
 
 mod token {
     soroban_sdk::contractimport!(file = "../../soroban_token_spec.wasm");
@@ -41,7 +41,7 @@ impl receiver_interface::Contract for FlashLoanReceiverContract {
         let total_0 = amount_0 + compute_fee(&amount_0);
 
         // increment the allowance to the flash loan to re-pay the flash loan
-        token_client_0.incr_allow(&e.current_contract_address(), &flash_loan_0, &total_0);
+        token_client_0.increase_allowance(&e.current_contract_address(), &flash_loan_0, &total_0);
 
         /*
         Perform all your operations here

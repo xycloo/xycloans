@@ -1,8 +1,8 @@
-use soroban_sdk::{vec, Address, BytesN, Env, Vec};
+use soroban_sdk::{unwrap::UnwrapOptimized, vec, Address, BytesN, ConversionError, Env, Vec};
 
 use crate::{
     token,
-    types::{BatchKey, BatchObj, DataKey},
+    types::{BatchKey, BatchObj, DataKey, Error},
 };
 
 pub fn get_contract_addr(e: &Env) -> Address {
@@ -49,23 +49,20 @@ pub fn get_flash_loan_bytes(e: &Env) -> BytesN<32> {
     e.storage().get(&key).unwrap().unwrap()
 }
 
-pub fn get_token_balance(e: &Env) -> i128 {
-    let contract_id = get_token_id(e);
-    let client = token::Client::new(e, &contract_id);
-
+pub fn get_token_balance(e: &Env, client: &token::Client) -> i128 {
     client.balance(&get_contract_addr(e)) + client.balance(&get_flash_loan(e))
 }
 
 pub fn transfer(e: &Env, to: &Address, amount: i128) {
     let client = token::Client::new(e, &get_token_id(e));
-    client.xfer(&get_contract_addr(e), to, &amount);
+    client.transfer(&get_contract_addr(e), to, &amount);
 }
 
-pub fn transfer_in_vault(e: &Env, from: &Address, amount: &i128) {
+pub fn _transfer_in_vault(e: &Env, from: &Address, amount: &i128) {
     let client = token::Client::new(e, &get_token_id(e));
     let vault_addr = get_contract_addr(e);
 
-    client.xfer(from, &vault_addr, amount);
+    client.transfer(from, &vault_addr, amount);
 }
 
 pub fn has_administrator(e: &Env) -> bool {
@@ -102,19 +99,9 @@ pub fn mint_shares(e: &Env, to: Address, shares: i128, deposit: i128) -> i128 {
     n
 }
 
-pub fn get_user_batches(e: &Env, id: Address) -> Vec<i128> {
-    let n = get_increment(e, id);
-    let mut batches = vec![e];
-    for i in 0..n {
-        batches.push_back(i)
-    }
-
-    batches
-}
-
 pub fn burn_shares(e: &Env, to: Address, shares: i128, batch_n: i128) {
     let tot_supply = get_tot_supply(e);
-    let key = DataKey::Batch(BatchKey(to.clone(), batch_n));
+    let key = DataKey::Batch(BatchKey(to, batch_n));
 
     let mut batch: BatchObj = e.storage().get(&key).unwrap().unwrap();
     batch.curr_s -= shares;
@@ -136,4 +123,33 @@ pub fn get_increment(e: &Env, id: Address) -> i128 {
         .get(&DataKey::Increment(id))
         .unwrap_or(Ok(0))
         .unwrap()
+}
+
+pub fn auth_admin(e: &Env, admin: Address) -> Result<(), Error> {
+    if read_admin(e) != admin {
+        return Err(Error::InvalidAdminAuth);
+    }
+    admin.require_auth();
+    Ok(())
+}
+
+pub fn get_batch(e: &Env, id: Address, batch_n: i128) -> Option<Result<BatchObj, ConversionError>> {
+    let key = DataKey::Batch(BatchKey(id, batch_n));
+    e.storage().get(&key)
+}
+
+pub fn get_initial_deposit(e: &Env, id: Address) -> i128 {
+    e.storage().get(&DataKey::InitialDep(id)).unwrap().unwrap()
+}
+
+pub fn set_initial_deposit(e: &Env, id: Address, amount: i128) {
+    e.storage().set(&DataKey::InitialDep(id), &amount)
+}
+
+pub fn transfer_into_flash_loan(e: &Env, client: &token::Client, from: &Address, amount: &i128) {
+    client.transfer(from, &get_flash_loan(e), amount);
+}
+
+pub fn get_token_client(e: &Env) -> token::Client {
+    token::Client::new(e, &get_token_id(e))
 }

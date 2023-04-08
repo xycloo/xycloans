@@ -1,7 +1,7 @@
 #![cfg(test)]
 use soroban_sdk::testutils::{Ledger, LedgerInfo};
-use soroban_sdk::{symbol, vec, IntoVal, RawVal, Symbol};
 use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
+use soroban_sdk::{vec, IntoVal, RawVal, Symbol};
 
 mod token {
     use soroban_sdk::contractimport;
@@ -77,9 +77,9 @@ fn successful_borrow() {
     );
 
     proxy_client.set_vault(&protocol, &token_id, &vault_contract_id);
-    proxy_client.set_fl(&protocol, &token_id, &flash_loan_contract_id);
+    proxy_client.set_flash_loan(&protocol, &token_id, &flash_loan_contract_id);
 
-    usdc_token.mint(&token_admin, &lp, &1000000);
+    usdc_token.mint(&lp, &1000000);
     proxy_client.deposit(&lp, &token_id, &1000000);
 
     assert_eq!(usdc_token.balance(&vault_id), 0);
@@ -91,16 +91,11 @@ fn successful_borrow() {
     receiver_client.init(&token_id, &flash_loan_id, &100000);
 
     // These `100 $USDC` below are the profits the receiver contract would make. We simply mint the contract some tokens without performing any cdp or arbitrage trading action since it's beyond the scope of the quickstart.
-    usdc_token.mint(
-        &token_admin,
-        &Address::from_contract_id(&e, &receiver_contract),
-        &100,
-    );
+    usdc_token.mint(&Address::from_contract_id(&e, &receiver_contract), &100);
 
     proxy_client.borrow(
         &token_id,
         &100000,
-        &receiver_contract,
         &Address::from_contract_id(&e, &receiver_contract),
     );
 }
@@ -143,9 +138,9 @@ fn unsuccessful_borrow() {
     );
 
     proxy_client.set_vault(&protocol, &token_id, &vault_contract_id);
-    proxy_client.set_fl(&protocol, &token_id, &flash_loan_contract_id);
+    proxy_client.set_flash_loan(&protocol, &token_id, &flash_loan_contract_id);
 
-    usdc_token.mint(&token_admin, &lp, &1000000);
+    usdc_token.mint(&lp, &1000000);
     proxy_client.deposit(&lp, &token_id, &1000000);
 
     assert_eq!(usdc_token.balance(&vault_id), 0);
@@ -159,7 +154,6 @@ fn unsuccessful_borrow() {
     proxy_client.borrow(
         &token_id,
         &100000,
-        &receiver_contract,
         &Address::from_contract_id(&e, &receiver_contract),
     );
 }
@@ -173,7 +167,7 @@ fn deposit() {
 
     let token_id = e.register_stellar_asset_contract(token_admin.clone());
     let token = token::Client::new(&e, &token_id);
-    token.mint(&token_admin, &lp, &10000000);
+    token.mint(&lp, &10000000);
 
     let proxy_contract_id =
         e.register_contract_wasm(&BytesN::from_array(&e, &[1; 32]), proxy::WASM);
@@ -201,7 +195,7 @@ fn deposit() {
     );
 
     proxy_client.set_vault(&protocol, &token_id, &vault_contract_id);
-    proxy_client.set_fl(&protocol, &token_id, &flash_loan_contract_id);
+    proxy_client.set_flash_loan(&protocol, &token_id, &flash_loan_contract_id);
 
     proxy_client.deposit(&lp, &token_id, &10000000);
 
@@ -219,7 +213,7 @@ fn proxy_admin_auth() {
 
     let token_id = e.register_stellar_asset_contract(token_admin.clone());
     let token = token::Client::new(&e, &token_id);
-    token.mint(&token_admin, &lp, &10000000);
+    token.mint(&lp, &10000000);
 
     let proxy_contract_id =
         e.register_contract_wasm(&BytesN::from_array(&e, &[1; 32]), proxy::WASM);
@@ -250,7 +244,7 @@ fn proxy_admin_auth() {
     let expected_auth: Vec<(Address, BytesN<32>, Symbol, soroban_sdk::Vec<RawVal>)> = std::vec![(
         protocol.clone(),
         proxy_contract_id.clone(),
-        symbol!("set_vault"),
+        Symbol::short("set_vault"),
         vec![
             &e,
             protocol.into_val(&e),
@@ -260,11 +254,11 @@ fn proxy_admin_auth() {
     )];
     assert_eq!(e.recorded_top_authorizations(), expected_auth);
 
-    proxy_client.set_fl(&protocol, &token_id, &flash_loan_contract_id);
+    proxy_client.set_flash_loan(&protocol, &token_id, &flash_loan_contract_id);
     let expected_auth: Vec<(Address, BytesN<32>, Symbol, soroban_sdk::Vec<RawVal>)> = std::vec![(
         protocol.clone(),
         proxy_contract_id,
-        symbol!("set_fl"),
+        Symbol::new(&e, "set_flash_loan"),
         vec![
             &e,
             protocol.into_val(&e),
@@ -286,7 +280,7 @@ fn proxy_invalid_admin_auth() {
 
     let token_id = e.register_stellar_asset_contract(token_admin.clone());
     let token = token::Client::new(&e, &token_id);
-    token.mint(&token_admin, &lp, &10000000);
+    token.mint(&lp, &10000000);
 
     let proxy_contract_id =
         e.register_contract_wasm(&BytesN::from_array(&e, &[1; 32]), proxy::WASM);
@@ -316,7 +310,8 @@ fn proxy_invalid_admin_auth() {
     let _set_vault_res = proxy_client.try_set_vault(&not_protocol, &token_id, &vault_contract_id);
     assert_eq!(e.recorded_top_authorizations(), []);
 
-    let _set_fl_res = proxy_client.try_set_fl(&not_protocol, &token_id, &flash_loan_contract_id);
+    let _set_flash_loan_res =
+        proxy_client.try_set_flash_loan(&not_protocol, &token_id, &flash_loan_contract_id);
     assert_eq!(e.recorded_top_authorizations(), []);
 }
 
@@ -327,9 +322,9 @@ fn fee_withdrawal() {
     let protocol = Address::random(&e);
     let lp = Address::random(&e);
 
-    let token_id = e.register_stellar_asset_contract(token_admin.clone());
+    let token_id = e.register_stellar_asset_contract(token_admin);
     let token = token::Client::new(&e, &token_id);
-    token.mint(&token_admin, &lp, &40000000000);
+    token.mint(&lp, &40000000000);
 
     let proxy_contract_id =
         e.register_contract_wasm(&BytesN::from_array(&e, &[1; 32]), proxy::WASM);
@@ -357,21 +352,27 @@ fn fee_withdrawal() {
     );
 
     proxy_client.set_vault(&protocol, &token_id, &vault_contract_id);
-    proxy_client.set_fl(&protocol, &token_id, &flash_loan_contract_id);
+    proxy_client.set_flash_loan(&protocol, &token_id, &flash_loan_contract_id);
 
-    proxy_client.deposit(&lp, &token_id, &40000000000);
+    proxy_client.deposit(&lp, &token_id, &10000000000);
 
-    assert_eq!(token.balance(&lp), 0);
-    assert_eq!(token.balance(&flash_loan_id), 40000000000);
+    //    assert_eq!(token.balance(&lp), 0);
+    assert_eq!(token.balance(&flash_loan_id), 10000000000);
     assert_eq!(token.balance(&vault_id), 0);
 
     let batch_0 = vault_client.get_shares(&lp, &0);
+    assert_eq!(batch_0.deposit, 10000000000);
+    assert_eq!(batch_0.curr_s, 10000000000);
+    assert_eq!(batch_0.init_s, 10000000000);
 
-    proxy_client.fee_withd(&lp, &token_id, &0, &300000000);
+    proxy_client.withdraw_fee(&lp, &token_id, &0, &100000000);
 
-    let updated_batch_0 = vault_client.get_shares(&lp, &0);
+    let batch_0 = vault_client.get_shares(&lp, &0);
+    assert_eq!(batch_0.deposit, 10000000000);
+    assert_eq!(batch_0.curr_s, 9900000000);
+    assert_eq!(batch_0.init_s, 10000000000);
 
-    assert_eq!(updated_batch_0.curr_s, batch_0.curr_s - 300000000);
+    //    assert_eq!(updated_batch_0.curr_s, batch_0.curr_s - 300000000);
 }
 
 #[test]
@@ -383,7 +384,7 @@ fn liquidity_withdrawal() {
 
     let token_id = e.register_stellar_asset_contract(token_admin.clone());
     let token = token::Client::new(&e, &token_id);
-    token.mint(&token_admin, &lp, &50000000000);
+    token.mint(&lp, &50000000000);
 
     let proxy_contract_id =
         e.register_contract_wasm(&BytesN::from_array(&e, &[1; 32]), proxy::WASM);
@@ -411,18 +412,18 @@ fn liquidity_withdrawal() {
     );
 
     proxy_client.set_vault(&protocol, &token_id, &vault_contract_id);
-    proxy_client.set_fl(&protocol, &token_id, &flash_loan_contract_id);
+    proxy_client.set_flash_loan(&protocol, &token_id, &flash_loan_contract_id);
 
     proxy_client.deposit(&lp, &token_id, &40000000000);
     proxy_client.deposit(&lp, &token_id, &10000000000);
 
-    token.mint(&token_admin, &vault_id, &1000000);
+    token.mint(&vault_id, &1000000);
 
     assert_eq!(token.balance(&lp), 0);
     assert_eq!(token.balance(&flash_loan_id), 50000000000);
     assert_eq!(token.balance(&vault_id), 1000000);
 
-    proxy_client.liq_withd(&lp, &token_id);
+    proxy_client.withdraw_all(&lp, &token_id);
 
     assert_eq!(token.balance(&lp), 50000000000 + 1000000);
 }

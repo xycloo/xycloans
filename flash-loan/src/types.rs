@@ -4,10 +4,11 @@ use soroban_sdk::{contracterror, contracttype};
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum Error {
-    Generic = 1,
-    ContractAlreadyInitialized = 2,
+    NotInitialized = 1,
+    AlreadyInitialized = 2,
     GenericLend = 3,
-    GenericRepay = 4,
+    LoanNotRepaid = 4,
+    NotLP = 5,
 }
 
 #[contracttype]

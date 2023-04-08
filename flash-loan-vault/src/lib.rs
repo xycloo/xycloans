@@ -1,6 +1,7 @@
 #![no_std]
 
 mod contract;
+mod math;
 mod storage;
 mod types;
 
