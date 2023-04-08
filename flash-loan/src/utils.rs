@@ -1,6 +1,9 @@
 use soroban_sdk::{Address, BytesN, Env, IntoVal, RawVal, Symbol};
 
-use crate::{token, types::DataKey};
+use crate::{
+    token,
+    types::{DataKey, Error},
+};
 
 pub fn is_initialized(e: &Env) -> bool {
     e.storage().has(&DataKey::TokenId)
@@ -12,7 +15,7 @@ pub fn set_token(e: &Env, id: BytesN<32>) {
 }
 
 fn compute_fee(amount: &i128) -> i128 {
-    amount / 200 // 0.05%, still TBD
+    amount / 2000 // 0.05%, still TBD
 }
 
 pub fn get_token_id(e: &Env) -> BytesN<32> {
@@ -34,18 +37,36 @@ pub fn transfer(e: &Env, client: &token::Client, to: &Address, amount: &i128) {
     client.transfer(&get_contract_addr(e), to, amount);
 }
 
-pub fn xfer_from_to_fl(e: &Env, client: &token::Client, from: &Address, amount: &i128) {
+pub fn xfer_from_to_fl(
+    e: &Env,
+    client: &token::Client,
+    from: &Address,
+    amount: &i128,
+) -> Result<(), Error> {
     //    let token_id: BytesN<32> = get_token_id(e);
     //    let client = token::Client::new(e, &token_id);
 
-    client.transfer_from(&get_contract_addr(e), from, &get_contract_addr(e), amount);
+    let res = client.try_transfer_from(&get_contract_addr(e), from, &get_contract_addr(e), amount);
+
+    if let Ok(Ok(_)) = res {
+        Ok(())
+    } else {
+        Err(Error::LoanNotRepaid)
+    }
 }
 
-pub fn try_repay(e: &Env, client: &token::Client, receiver_id: &Address, amount: &i128) {
+pub fn try_repay(
+    e: &Env,
+    client: &token::Client,
+    receiver_id: &Address,
+    amount: &i128,
+) -> Result<(), Error> {
     let fees = compute_fee(amount);
 
-    xfer_from_to_fl(e, client, receiver_id, &(amount + fees));
+    xfer_from_to_fl(e, client, receiver_id, &(amount + fees))?;
     transfer(e, client, &get_lp(e), &fees);
+
+    Ok(())
 }
 
 pub fn invoke_receiver(e: &Env, id: &BytesN<32>) {

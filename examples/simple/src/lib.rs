@@ -17,7 +17,7 @@ pub struct FlashLoanReceiverContract;
 pub struct FlashLoanReceiverContractExt;
 
 fn compute_fee(amount: &i128) -> i128 {
-    5 * amount / 10000 // 0.05%, still TBD
+    amount / 2000 // 0.05%, still TBD
 }
 
 #[contractimpl]

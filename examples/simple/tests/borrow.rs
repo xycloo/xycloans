@@ -45,8 +45,8 @@ fn test_successful_borrow() {
     let token_id = env.register_stellar_asset_contract(u1.clone());
     let token = token::Client::new(&env, &token_id);
 
-    token.mint(&u1, &lp1, &1000000000);
-    token.xfer(
+    token.mint(&lp1, &1000000000);
+    token.transfer(
         &lp1,
         &Address::from_contract_id(&env, &flash_loan_contract_id),
         &1000000000,
@@ -62,16 +62,11 @@ fn test_successful_borrow() {
     receiver_client.init(&token_id, &flash_loan_addr, &1000000);
 
     // These `100 $USDC` below are the profits the receiver contract would make. We simply mint the contract some tokens without performing any cdp or arbitrage trading action since it's beyond the scope of the quickstart.
-    token.mint(
-        &u1,
-        &Address::from_contract_id(&env, &receiver_contract),
-        &1000,
-    );
+    token.mint(&Address::from_contract_id(&env, &receiver_contract), &1000);
 
     // Borrowing from the lender, this invocation will result in an invocation to your receiver contract (the one you wrote in `lib.rs`)
     flash_loan_client.borrow(
         &Address::from_contract_id(&env, &receiver_contract),
-        &receiver_contract,
         &1000000,
     );
 
@@ -126,7 +121,7 @@ fn test_unsuccessful_borrow() {
         &Address::Account(lp1.clone()),
         &1000000000,
     );
-    token.with_source_account(&lp1).xfer(
+    token.with_source_account(&lp1).transfer(
         &Signature::Invoker,
         &0,
         &Address::Contract(flash_loan_contract_id.clone()),

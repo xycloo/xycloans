@@ -86,10 +86,9 @@ pub fn flash_loan_borrow(
     env: &Env,
     token_contract_id: BytesN<32>,
     amount: i128,
-    receiver_contract_id: BytesN<32>,
     receiver_address: Address,
 ) -> Result<(), Error> {
     let flash_loan_client = flash_loan::Client::new(env, &get_flash_loan(env, token_contract_id)?);
-    flash_loan_client.borrow(&receiver_address, &receiver_contract_id, &amount);
+    flash_loan_client.borrow(&receiver_address, &amount);
     Ok(())
 }

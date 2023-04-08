@@ -53,7 +53,6 @@ pub trait BorrowTrait {
         env: Env,
         token_contract_id: BytesN<32>,
         amount: i128,
-        receiver_contract_id: BytesN<32>,
         receiver_address: Address,
     ) -> Result<(), Error>;
 }
@@ -141,16 +140,9 @@ impl BorrowTrait for ProxyBorrow {
         env: Env,
         token_contract_id: BytesN<32>,
         amount: i128,
-        receiver_contract_id: BytesN<32>,
         receiver_address: Address,
     ) -> Result<(), Error> {
-        flash_loan_borrow(
-            &env,
-            token_contract_id,
-            amount,
-            receiver_contract_id,
-            receiver_address,
-        )?;
+        flash_loan_borrow(&env, token_contract_id, amount, receiver_address)?;
         Ok(())
     }
 }

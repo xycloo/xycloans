@@ -66,7 +66,7 @@ impl Borrow for FlashLoanBorrow {
             invoke_receiver(&e, &receiver_id_bytes);
 
             // try `transfer_from()` of (`amount` + fees) from the receiver to the flash loan
-            try_repay(&e, &client, &receiver_id, &amount);
+            try_repay(&e, &client, &receiver_id, &amount)?;
 
             Ok(())
         } else {

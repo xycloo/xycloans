@@ -7,7 +7,7 @@ pub enum Error {
     NotInitialized = 1,
     AlreadyInitialized = 2,
     GenericLend = 3,
-    GenericRepay = 4,
+    LoanNotRepaid = 4,
     NotLP = 5,
 }
 

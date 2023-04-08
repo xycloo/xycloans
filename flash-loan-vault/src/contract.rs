@@ -6,8 +6,6 @@ use crate::{
 };
 use soroban_sdk::{contractimpl, Address, BytesN, Env};
 
-pub const SCALAR: i128 = 10;
-
 pub trait VaultContractTrait {
     fn initialize(
         e: Env,
