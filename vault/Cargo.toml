@@ -1,5 +1,5 @@
 [package]
-name = "flash-loan-vault"
+name = "xycloans-fl-vault"
 version = "0.0.0"
 edition = "2021"
 publish = false
@@ -10,8 +10,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 soroban-sdk = { workspace = true }
-#soroban-auth = { workspace = true }
 
 [dev_dependencies]
 soroban-sdk = { workspace = true, features=["testutils"] }
-#soroban-auth = { workspace = true, features=["testutils"] }
