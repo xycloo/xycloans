@@ -18,6 +18,7 @@ jobs:
     - name: Build
       run: |
         rustup toolchain install nightly
+        rustup component add rust-src --toolchain nightly-x86_64-unknown-linux-gnu
         cargo +nightly build --target wasm32-unknown-unknown --release -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort -p soroban-flash-loan-receiver-standard
         cargo +nightly build --target wasm32-unknown-unknown --release -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort -p xycloans-flash-loan
         cargo +nightly build --target wasm32-unknown-unknown --release -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort -p xycloans-fl-vault
