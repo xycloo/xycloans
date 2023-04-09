@@ -13,7 +13,10 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        rust-channel: [ 'stable', 'nightly' ]
+        rust-host: [ 'x86_64-unknown-linux-gnu', 'i686-unknown-linux-gnu' ]
     steps:
     - uses: actions/checkout@v3
     - name: Build
