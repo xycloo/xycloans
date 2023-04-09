@@ -9,7 +9,7 @@ mod token {
 mod loan_ctr {
     use soroban_sdk::contractimport;
 
-    contractimport!(file = "../target/wasm32-unknown-unknown/release/flash_loan.wasm");
+    contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_flash_loan.wasm");
 }
 
 #[test]

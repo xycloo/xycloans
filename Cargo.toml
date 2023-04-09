@@ -28,3 +28,7 @@ lto = true
 git = "https://github.com/stellar/rs-soroban-sdk"
 rev = "29b505cf95f2fd4fbe639fdb163b606c44920837"
 version = "0.7.0"
+
+
+[workspace.dependencies.fixed-point-math]
+version = "0.0.2"

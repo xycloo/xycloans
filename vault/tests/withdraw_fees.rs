@@ -3,21 +3,21 @@ mod token {
 
     contractimport!(file = "../soroban_token_spec.wasm");
 }
+use fixed_point_math::{FixedPoint, STROOP};
 
 mod vault {
     use soroban_sdk::contractimport;
 
-    contractimport!(file = "../target/wasm32-unknown-unknown/release/flash_loan_vault.wasm");
+    contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_fl_vault.wasm");
 }
 
 mod loan_ctr {
     use soroban_sdk::contractimport;
 
-    contractimport!(file = "../target/wasm32-unknown-unknown/release/flash_loan.wasm");
+    contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_flash_loan.wasm");
 }
 
 use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
-
 
 #[test]
 fn fee_withdraw_multiple_users() {
@@ -51,23 +51,23 @@ fn fee_withdraw_multiple_users() {
     assert_eq!(token.balance(&user1), 0);
     assert_eq!(token.balance(&vault_id), 0);
     assert_eq!(token.balance(&flash_loan_id), 50000000);
-    
+
     vault_client.deposit(&user1, &user2, &100000000);
     vault_client.withdraw_fee(&user1, &user2, &0, &100000000);
     assert_eq!(token.balance(&user2), 0);
     assert_eq!(token.balance(&vault_id), 0);
     assert_eq!(token.balance(&flash_loan_id), 150000000);
-    
+
     // flash loans generate yield
     token.mint(&vault_id, &15000); // 1/3 of the deposited liquidity
 
-    vault_client.withdraw_fee(&user1, &user1, &1, &50000000);
-    assert_eq!(token.balance(&user1), 5000);
-    assert_eq!(token.balance(&vault_id), 10000);
+    vault_client.withdraw_fee(&user1, &user1, &1, &33000000);
+    assert_eq!(token.balance(&user1), 3300);
+    assert_eq!(token.balance(&vault_id), 11700);
     assert_eq!(token.balance(&flash_loan_id), 150000000);
 
     vault_client.withdraw_fee(&user1, &user2, &1, &100000000);
     assert_eq!(token.balance(&user2), 10000);
-    assert_eq!(token.balance(&vault_id), 0);
+    assert_eq!(token.balance(&vault_id), 1700);
     assert_eq!(token.balance(&flash_loan_id), 150000000);
 }

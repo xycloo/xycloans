@@ -153,9 +153,10 @@ impl VaultContractTrait for VaultContract {
                 burn_shares(&e, to.clone(), withdrawable_shares, batch_n);
 
                 if temp_balance != new_deposit {
-                    temp_supply += (new_deposit * temp_supply) / (temp_balance - new_deposit);
+                    temp_supply +=
+                        compute_shares_amount(new_deposit, temp_supply, temp_balance - new_deposit)
                 } else {
-                    temp_supply += (new_deposit * temp_supply) / (new_deposit);
+                    temp_supply += compute_shares_amount(new_deposit, temp_supply, new_deposit)
                 }
             }
         }

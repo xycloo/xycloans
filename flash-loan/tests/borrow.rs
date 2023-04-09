@@ -13,7 +13,7 @@ mod token {
 mod loan_ctr {
     use soroban_sdk::contractimport;
 
-    contractimport!(file = "../target/wasm32-unknown-unknown/release/flash_loan.wasm");
+    contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_flash_loan.wasm");
 }
 
 mod receiver_interface {
@@ -76,7 +76,6 @@ fn successful_borrow() {
     assert_eq!(token.balance(&u1), 0);
 }
 
-
 #[test]
 #[should_panic(expected = "Status(ContractError(4))")]
 fn unsuccessful_borrow() {
@@ -95,8 +94,10 @@ fn unsuccessful_borrow() {
     let increment_contract_id = Address::from_contract_id(&env, &increment_contract);
     let increment_client = BalIncrementClient::new(&env, &increment_contract);
 
-    let receiver_contract =
-        env.register_contract(None, crate::flash_loan_receiver_standard_unsuccessful::FlashLoanReceiver);
+    let receiver_contract = env.register_contract(
+        None,
+        crate::flash_loan_receiver_standard_unsuccessful::FlashLoanReceiver,
+    );
     let receiver_contract_id = Address::from_contract_id(&env, &receiver_contract);
     let receiver_client = FlashLoanReceiverUnsuccessfulClient::new(&env, &receiver_contract);
 
@@ -115,9 +116,7 @@ fn unsuccessful_borrow() {
     token.transfer(&lp1, &flash_loan_contract_id, &1000000000);
 
     flash_loan_client.borrow(&receiver_contract_id, &100000);
-
 }
-
 
 mod flash_loan_receiver_standard {
     use super::BalIncrementClient;
@@ -166,7 +165,6 @@ mod flash_loan_receiver_standard {
         }
     }
 }
-
 
 mod flash_loan_receiver_standard_unsuccessful {
     use crate::{receiver_interface, token};

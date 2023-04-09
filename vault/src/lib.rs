@@ -10,5 +10,7 @@ mod token {
 }
 
 mod flash_loan {
-    soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/flash_loan.wasm");
+    soroban_sdk::contractimport!(
+        file = "../target/wasm32-unknown-unknown/release/xycloans_flash_loan.wasm"
+    );
 }

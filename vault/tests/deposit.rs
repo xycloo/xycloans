@@ -7,13 +7,13 @@ mod token {
 mod vault {
     use soroban_sdk::contractimport;
 
-    contractimport!(file = "../target/wasm32-unknown-unknown/release/flash_loan_vault.wasm");
+    contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_fl_vault.wasm");
 }
 
 mod loan_ctr {
     use soroban_sdk::contractimport;
 
-    contractimport!(file = "../target/wasm32-unknown-unknown/release/flash_loan.wasm");
+    contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_flash_loan.wasm");
 }
 
 use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
@@ -57,7 +57,6 @@ fn deposit() {
     assert_eq!(u1_batch.curr_s, 1000000000);
     assert_eq!(u1_batch.init_s, 1000000000);
 
-
     vault_client.deposit(&user1, &user2, &500000000);
     assert_eq!(token.balance(&user2), 0);
     assert_eq!(token.balance(&flash_loan_id), 1500000000);
@@ -81,4 +80,3 @@ fn deposit() {
     assert_eq!(u2_batch.curr_s, 300000000);
     assert_eq!(u2_batch.init_s, 300000000);
 }
-

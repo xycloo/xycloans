@@ -7,13 +7,13 @@ mod token {
 mod vault {
     use soroban_sdk::contractimport;
 
-    contractimport!(file = "../target/wasm32-unknown-unknown/release/flash_loan_vault.wasm");
+    contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_fl_vault.wasm");
 }
 
 mod loan_ctr {
     use soroban_sdk::contractimport;
 
-    contractimport!(file = "../target/wasm32-unknown-unknown/release/flash_loan.wasm");
+    contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_flash_loan.wasm");
 }
 
 use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
@@ -43,10 +43,10 @@ fn vault_admin_auth() {
     flash_loan_client.init(&token_id, &vault_id);
     vault_client.initialize(&user1, &token_id, &flash_loan_id, &flash_loan_contract_id);
 
-    token.mint(&user1, &1000);
-    token.mint(&user2, &1000);
+    token.mint(&user1, &(10 * STROOP as i128));
+    token.mint(&user2, &(10 * STROOP as i128));
 
-    vault_client.deposit(&user1, &user1, &500);
+    vault_client.deposit(&user1, &user1, &(10 * STROOP as i128));
     let expected_auth: Vec<(Address, BytesN<32>, Symbol, soroban_sdk::Vec<RawVal>)> = std::vec![(
         user1.clone(),
         vault_contract_id.clone(),
@@ -55,12 +55,12 @@ fn vault_admin_auth() {
             &e,
             user1.into_val(&e),
             user1.into_val(&e),
-            500_i128.into_val(&e),
+            (10 * STROOP as i128).into_val(&e),
         ],
     )];
     assert_eq!(e.recorded_top_authorizations(), expected_auth);
 
-    vault_client.withdraw_fee(&user1, &user1, &0, &500);
+    vault_client.withdraw_fee(&user1, &user1, &0, &(5 * STROOP as i128));
     let expected_auth: Vec<(Address, BytesN<32>, Symbol, soroban_sdk::Vec<RawVal>)> = std::vec![(
         user1.clone(),
         vault_contract_id.clone(),
@@ -70,7 +70,7 @@ fn vault_admin_auth() {
             user1.into_val(&e),
             user1.into_val(&e),
             0_i128.into_val(&e),
-            500_i128.into_val(&e),
+            (5 * STROOP as i128).into_val(&e),
         ],
     )];
     assert_eq!(e.recorded_top_authorizations(), expected_auth);
@@ -111,15 +111,17 @@ fn vault_admin_invalid_auth() {
     flash_loan_client.init(&token_id, &vault_id);
     vault_client.initialize(&user1, &token_id, &flash_loan_id, &flash_loan_contract_id);
 
-    token.mint(&user1, &1000);
-    token.mint(&user2, &1000);
+    token.mint(&user1, &(10 * STROOP as i128));
+    token.mint(&user2, &(10 * STROOP as i128));
 
-    let _res = vault_client.try_deposit(&not_user1, &user1, &500);
+    let _res = vault_client.try_deposit(&not_user1, &user1, &(5 * STROOP as i128));
     assert_eq!(e.recorded_top_authorizations(), []);
 
-    let _res = vault_client.try_withdraw_fee(&not_user1, &user1, &0, &500);
+    let _res = vault_client.try_withdraw_fee(&not_user1, &user1, &0, &(5 * STROOP as i128));
     assert_eq!(e.recorded_top_authorizations(), []);
 
     let _res = vault_client.try_withdraw(&not_user1, &user1);
     assert_eq!(e.recorded_top_authorizations(), []);
 }
+
+use fixed_point_math::STROOP;

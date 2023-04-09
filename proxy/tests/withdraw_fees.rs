@@ -8,13 +8,13 @@ mod token {
 mod loan_ctr {
     use soroban_sdk::contractimport;
 
-    contractimport!(file = "../target/wasm32-unknown-unknown/release/flash_loan.wasm");
+    contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_flash_loan.wasm");
 }
 
 mod vault {
     use soroban_sdk::contractimport;
 
-    contractimport!(file = "../target/wasm32-unknown-unknown/release/flash_loan_vault.wasm");
+    contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_fl_vault.wasm");
 }
 
 mod proxy {
@@ -35,7 +35,6 @@ mod receiver_ctr {
     use soroban_sdk::contractimport;
     contractimport!(file = "../target/wasm32-unknown-unknown/release/simple.wasm");
 }
-
 
 #[test]
 fn fee_withdrawal() {
