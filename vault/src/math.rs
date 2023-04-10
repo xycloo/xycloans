@@ -2,6 +2,7 @@ use core::ops::{Add, Sub};
 
 use fixed_point_math::{FixedPoint, STROOP};
 
+// deprecated
 pub fn compute_deposit_ratio(deposit: i128, burned: i128, initial: i128) -> i128 {
     deposit
         .fixed_div_floor(
@@ -19,6 +20,7 @@ pub fn compute_shares_amount(deposited: i128, total_supply: i128, pool_balance: 
         .unwrap()
 }
 
+// deprecated
 pub fn compute_fee_amount(
     ratio_deposit: i128,
     burned: i128,
