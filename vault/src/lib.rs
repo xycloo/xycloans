@@ -2,6 +2,7 @@
 
 mod contract;
 mod math;
+mod rewards;
 mod storage;
 mod types;
 

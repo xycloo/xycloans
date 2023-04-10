@@ -64,6 +64,8 @@ pub fn try_repay(
     let fees = compute_fee(amount);
 
     xfer_from_to_fl(e, client, receiver_id, &(amount + fees))?;
+
+    // rather than transfering, we call the vault's deposit_fees method.
     transfer(e, client, &get_lp(e), &fees);
 
     Ok(())
