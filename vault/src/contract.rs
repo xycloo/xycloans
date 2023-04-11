@@ -1,15 +1,13 @@
 use crate::{
     balance::{burn_shares, mint_shares},
     flash_loan,
-    math::{compute_deposit, compute_deposit_ratio, compute_fee_amount, compute_shares_amount},
+    math::{compute_deposit, compute_shares_amount},
     rewards::{pay_matured, update_fee_per_share_universal, update_rewards},
     storage::*,
-    token_utility::{
-        get_token_client, read_flash_loan_balance, transfer, transfer_into_flash_loan,
-    },
+    token_utility::{get_token_client, read_flash_loan_balance, transfer_into_flash_loan},
     types::Error,
 };
-use soroban_sdk::{contractimpl, log, Address, BytesN, Env};
+use soroban_sdk::{contractimpl, Address, BytesN, Env};
 
 pub trait VaultContractTrait {
     fn initialize(
@@ -34,8 +32,7 @@ pub trait VaultContractTrait {
     // should be removed by the end of the update
     fn get_increment(e: Env, id: Address) -> Result<i128, Error>;
 
-    // needs to be re-implemented
-    fn withdraw(e: Env, admin: Address, addr: Address, amount: i128) -> Result<i128, Error>;
+    fn withdraw(e: Env, admin: Address, addr: Address, amount: i128) -> Result<(), Error>;
 }
 
 pub struct VaultContract;
@@ -75,11 +72,6 @@ impl VaultContractTrait for VaultContract {
 
         // update the universal fee per share amount here to avoid the need for a collected_last_recorded storage slot.
         update_fee_per_share_universal(&e, amount);
-
-        // add the new fees to the collected slot
-        //        let mut collected_last_recorded = get_collected_last_recorded(&e);
-        //        collected_last_recorded.add_assign(amount);
-        //        put_collected_last_recorded(&e, collected_last_recorded);
 
         Ok(())
     }
@@ -132,7 +124,7 @@ impl VaultContractTrait for VaultContract {
         Ok(())
     }
 
-    fn withdraw(e: Env, admin: Address, addr: Address, amount: i128) -> Result<i128, Error> {
+    fn withdraw(e: Env, admin: Address, addr: Address, amount: i128) -> Result<(), Error> {
         auth_admin(&e, admin)?;
 
         // construct the token client we'll use later on
@@ -154,6 +146,7 @@ impl VaultContractTrait for VaultContract {
             read_flash_loan_balance(&e, &token_client),
         );
 
+        // update and pay addr's rewards
         update_rewards(&e, addr.clone());
         pay_matured(&e, addr.clone());
 
@@ -162,9 +155,10 @@ impl VaultContractTrait for VaultContract {
         let flash_loan_client = flash_loan::Client::new(&e, &flash_loan_id_bytes);
         flash_loan_client.withdraw(&e.current_contract_address(), &addr_deposit, &addr);
 
+        // burn the shares
         burn_shares(&e, addr, amount);
 
-        Ok(addr_deposit)
+        Ok(())
     }
 
     fn get_shares(e: Env, id: Address) -> i128 {
