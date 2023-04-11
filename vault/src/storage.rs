@@ -31,6 +31,11 @@ pub fn read_balance(e: &Env, addr: Address) -> i128 {
     e.storage().get(&key).unwrap_or(Ok(0)).unwrap()
 }
 
+pub fn remove_balance(e: &Env, addr: Address) {
+    let key = DataKey::Balance(addr);
+    e.storage().remove(&key)
+}
+
 pub fn write_fee_per_share_particular(e: &Env, addr: Address, amount: i128) {
     let key = DataKey::FeePerShareParticular(addr);
     e.storage().set(&key, &amount);
@@ -39,6 +44,11 @@ pub fn write_fee_per_share_particular(e: &Env, addr: Address, amount: i128) {
 pub fn read_fee_per_share_particular(e: &Env, addr: Address) -> i128 {
     let key = DataKey::FeePerShareParticular(addr);
     e.storage().get(&key).unwrap_or(Ok(0)).unwrap()
+}
+
+pub fn remove_fee_per_share_particular(e: &Env, addr: Address) {
+    let key = DataKey::FeePerShareParticular(addr);
+    e.storage().remove(&key)
 }
 
 pub fn write_matured_fees_particular(e: &Env, addr: Address, amount: i128) {
@@ -50,6 +60,12 @@ pub fn read_matured_fees_particular(e: &Env, addr: Address) -> i128 {
     let key = DataKey::MaturedFeesParticular(addr);
     e.storage().get(&key).unwrap_or(Ok(0)).unwrap()
 }
+
+pub fn remove_matured_fees_particular(e: &Env, addr: Address) {
+    let key = DataKey::MaturedFeesParticular(addr);
+    e.storage().remove(&key)
+}
+
 /*
 // these two shouldn't be needed
 pub fn put_collected_last_recorded(e: &Env, last_recorded: i128) {

@@ -1,8 +1,8 @@
 use crate::{
-    balance::mint_shares,
+    balance::{burn_shares, mint_shares},
     flash_loan,
-    math::{compute_deposit_ratio, compute_fee_amount, compute_shares_amount},
-    rewards::{update_fee_per_share_universal, update_rewards},
+    math::{compute_deposit, compute_deposit_ratio, compute_fee_amount, compute_shares_amount},
+    rewards::{pay_matured, update_fee_per_share_universal, update_rewards},
     storage::*,
     token_utility::{
         get_token_client, read_flash_loan_balance, transfer, transfer_into_flash_loan,
@@ -35,7 +35,7 @@ pub trait VaultContractTrait {
     fn get_increment(e: Env, id: Address) -> Result<i128, Error>;
 
     // needs to be re-implemented
-    fn withdraw(e: Env, admin: Address, to: Address) -> Result<(), Error>;
+    fn withdraw(e: Env, admin: Address, addr: Address, amount: i128) -> Result<i128, Error>;
 }
 
 pub struct VaultContract;
@@ -89,7 +89,7 @@ impl VaultContractTrait for VaultContract {
         auth_admin(&e, admin)?;
 
         // we update the rewards before the deposit to avoid the abuse of the collected fees by withdrawing them with liquidity that didn't contribute to their generation.
-        update_rewards(&e, from.clone())?;
+        update_rewards(&e, from.clone());
 
         // construct the token client we'll use later on
         let token_client = get_token_client(&e);
@@ -119,67 +119,52 @@ impl VaultContractTrait for VaultContract {
         // authenticate the admin and check authorization
         auth_admin(&e, admin)?;
 
-        let token_client = get_token_client(&e);
-
-        // collect all the fees matured by the lender `addr`
-        let matured = read_matured_fees_particular(&e, addr.clone());
-
-        // transfer the matured yield to `addr` and update the particular matured fees storage slot
-        transfer(&e, &token_client, &addr, matured);
-        write_matured_fees_particular(&e, addr, 0);
+        // pay the matured yield
+        pay_matured(&e, addr);
 
         Ok(())
     }
 
     fn update_fee_rewards(e: Env, admin: Address, id: Address) -> Result<(), Error> {
         auth_admin(&e, admin)?;
-        update_rewards(&e, id)?;
+        update_rewards(&e, id);
 
         Ok(())
     }
 
-    fn withdraw(e: Env, admin: Address, to: Address) -> Result<(), Error> {
+    fn withdraw(e: Env, admin: Address, addr: Address, amount: i128) -> Result<i128, Error> {
         auth_admin(&e, admin)?;
 
         // construct the token client we'll use later on
         let token_client = get_token_client(&e);
 
-        /*        let increment = get_increment(&e, to.clone());
+        let addr_balance = read_balance(&e, addr.clone());
 
-        let mut amount: i128 = 0;
-        let mut temp_supply: i128 = get_tot_supply(&e);
-        let mut temp_balance: i128 = get_token_balance(&e, &token_client);
-
-        for batch_n in 0..increment {
-            if let Some(Ok(batch)) = get_batch(&e, to.clone(), batch_n) {
-                let withdrawable_shares = batch.curr_s;
-                let new_deposit =
-                    compute_deposit_ratio(batch.deposit, withdrawable_shares, batch.init_s);
-                let fee_amount =
-                    compute_fee_amount(new_deposit, withdrawable_shares, temp_supply, temp_balance);
-
-                amount += fee_amount;
-                temp_balance -= fee_amount;
-                temp_supply -= withdrawable_shares;
-
-                burn_shares(&e, to.clone(), withdrawable_shares, batch_n);
-
-                if temp_balance != new_deposit {
-                    temp_supply +=
-                        compute_shares_amount(new_deposit, temp_supply, temp_balance - new_deposit)
-                } else {
-                    temp_supply += compute_shares_amount(new_deposit, temp_supply, new_deposit)
-                }
-            }
+        // if the desired burned shares are more than the lender's balance return an error
+        if addr_balance < amount {
+            return Err(Error::InvalidShareBalance);
         }
 
-        let initial_deposit = get_initial_deposit(&e, to.clone());
+        let total_supply = get_tot_supply(&e);
+
+        // compute addr's deposit corresponding to the burned shares
+        let addr_deposit = compute_deposit(
+            amount,
+            total_supply,
+            read_flash_loan_balance(&e, &token_client),
+        );
+
+        update_rewards(&e, addr.clone());
+        pay_matured(&e, addr.clone());
+
+        // pay out the corresponding deposit
         let flash_loan_id_bytes = get_flash_loan_bytes(&e);
         let flash_loan_client = flash_loan::Client::new(&e, &flash_loan_id_bytes);
-        flash_loan_client.withdraw(&get_contract_addr(&e), &initial_deposit, &to);
-        transfer(&e, &token_client, &to, amount);*/
+        flash_loan_client.withdraw(&e.current_contract_address(), &addr_deposit, &addr);
 
-        Ok(())
+        burn_shares(&e, addr, amount);
+
+        Ok(addr_deposit)
     }
 
     fn get_shares(e: Env, id: Address) -> i128 {

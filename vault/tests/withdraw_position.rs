@@ -16,6 +16,7 @@ mod loan_ctr {
     contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_flash_loan.wasm");
 }
 
+use fixed_point_math::STROOP;
 use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
 
 #[test]
@@ -36,7 +37,7 @@ fn withdraw_liquidity_position() {
 
     let flash_loan_contract_id =
         e.register_contract_wasm(&BytesN::from_array(&e, &[8; 32]), loan_ctr::WASM);
-    let flash_loan_id = Address::from_contract_id(&e, &flash_loan_contract_id);
+    let flash_loan_id = Address::random(&e);
     let flash_loan_client = loan_ctr::Client::new(&e, &flash_loan_contract_id);
 
     flash_loan_client.init(&token_id, &vault_id);
@@ -52,15 +53,21 @@ fn withdraw_liquidity_position() {
     vault_client.deposit(&user1, &user2, &100000000000);
     assert_eq!(token.balance(&user2), 0);
 
-    vault_client.withdraw_fee(&user1, &user2, &0, &100000000000);
+    vault_client.update_fee_rewards(&user1, &user2);
+    vault_client.withdraw_matured(&user1, &user2);
     assert_eq!(token.balance(&user2), 0);
 
     // fees arrive
-    token.mint(&vault_id, &10000);
+    //token.mint(&vault_id, &10000);
+    token.mint(&flash_loan_id, &(STROOP as i128));
+    vault_client.deposit_fees(&flash_loan_id, &(STROOP as i128));
 
-    vault_client.withdraw_fee(&user1, &user2, &1, &100000000000);
-    assert_eq!(token.balance(&user2), 6666);
+    vault_client.update_fee_rewards(&user1, &user2);
+    vault_client.withdraw_matured(&user1, &user2);
 
-    vault_client.withdraw(&user1, &user1);
+    assert_eq!(token.balance(&user2), 6660000);
+
+    // todo: for this to pass we need to either include the whole flash loan process in this test or create a shield test contract that impersonates the flash loan contract and exposes a deposit fees function
+    vault_client.withdraw(&user1, &user1, &50000000000);
     assert_eq!(token.balance(&user1), 100000003334);
 }
