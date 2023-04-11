@@ -3,6 +3,7 @@ use soroban_sdk::{Address, BytesN, Env, IntoVal, RawVal, Symbol};
 use crate::{
     token,
     types::{DataKey, Error},
+    vault,
 };
 
 pub fn is_initialized(e: &Env) -> bool {
@@ -65,8 +66,9 @@ pub fn try_repay(
 
     xfer_from_to_fl(e, client, receiver_id, &(amount + fees))?;
 
-    // rather than transfering, we call the vault's deposit_fees method.
-    transfer(e, client, &get_lp(e), &fees);
+    // deposit fees into the vault
+    let vault_contract_id = get_lp(&e).contract_id().unwrap(); // safe since we require lp to be a contract upon initialization
+    vault::Client::new(&e, &vault_contract_id).deposit_fees(&e.current_contract_address(), &amount);
 
     Ok(())
 }

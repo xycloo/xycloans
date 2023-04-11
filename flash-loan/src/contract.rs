@@ -7,6 +7,7 @@ use crate::{
         get_lp, get_token_id, invoke_receiver, is_initialized, set_lp, set_token, transfer,
         try_repay,
     },
+    vault,
 };
 
 pub struct FlashLoanCommon;
@@ -40,6 +41,10 @@ impl Common for FlashLoanCommon {
     fn init(e: Env, token_id: BytesN<32>, lp: Address) -> Result<(), Error> {
         if is_initialized(&e) {
             return Err(Error::AlreadyInitialized);
+        }
+
+        if lp.contract_id().is_none() {
+            return Err(Error::LPNotAContract);
         }
 
         set_token(&e, token_id);
