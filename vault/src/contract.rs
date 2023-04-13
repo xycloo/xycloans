@@ -153,9 +153,9 @@ impl VaultContractTrait for VaultContract {
             read_flash_loan_balance(&e, &token_client),
         );
 
-        // update and pay addr's rewards
+        // update addr's rewards
         update_rewards(&e, addr.clone());
-        pay_matured(&e, addr.clone());
+        //        pay_matured(&e, addr.clone());
 
         // pay out the corresponding deposit
         let flash_loan_id_bytes = get_flash_loan_bytes(&e);
