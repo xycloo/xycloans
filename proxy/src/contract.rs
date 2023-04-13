@@ -36,15 +36,14 @@ pub trait LPTrait {
     ) -> Result<(), Error>;
 
     /// Withdraw fees for a certain amount of shares of a batch
-    fn withdraw_fee(
+    fn withdraw_fee(env: Env, lender: Address, token_contract_id: BytesN<32>) -> Result<(), Error>;
+
+    fn withdraw_liquidity(
         env: Env,
         lender: Address,
         token_contract_id: BytesN<32>,
-        batch_ts: i128,
-        amount: i128,
+        shares: i128,
     ) -> Result<(), Error>;
-
-    fn withdraw_all(env: Env, lender: Address, token_contract_id: BytesN<32>) -> Result<(), Error>;
 }
 
 pub trait BorrowTrait {
@@ -110,26 +109,25 @@ impl LPTrait for ProxyLP {
         Ok(())
     }
 
-    fn withdraw_fee(
-        env: Env,
-        lender: Address,
-        token_contract_id: BytesN<32>,
-        batch_n: i128,
-        shares: i128,
-    ) -> Result<(), Error> {
+    fn withdraw_fee(env: Env, lender: Address, token_contract_id: BytesN<32>) -> Result<(), Error> {
         lender.require_auth();
-        vault_withdraw_fees(&env, lender, token_contract_id, batch_n, shares)?;
+        vault_withdraw_matured_fees(&env, lender, token_contract_id)?;
 
         Ok(())
     }
 
-    fn withdraw_all(env: Env, lender: Address, token_contract_id: BytesN<32>) -> Result<(), Error> {
+    fn withdraw_liquidity(
+        env: Env,
+        lender: Address,
+        token_contract_id: BytesN<32>,
+        shares: i128,
+    ) -> Result<(), Error> {
         lender.require_auth();
 
         let vault = get_vault(&env, token_contract_id)?;
         let vault_client = Client::new(&env, &vault);
 
-        vault_client.withdraw(&env.current_contract_address(), &lender);
+        vault_client.withdraw(&env.current_contract_address(), &lender, &shares);
         Ok(())
     }
 }
