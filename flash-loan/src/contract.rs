@@ -1,13 +1,11 @@
 use soroban_sdk::{contractimpl, Address, BytesN, Env};
 
 use crate::{
+    execution::invoke_receiver,
+    storage::{get_lp, get_token_id, is_initialized, set_lp, set_token},
     token,
+    token_utility::{transfer, try_repay},
     types::Error,
-    utils::{
-        get_lp, get_token_id, invoke_receiver, is_initialized, set_lp, set_token, transfer,
-        try_repay,
-    },
-    vault,
 };
 
 pub struct FlashLoanCommon;
@@ -39,14 +37,17 @@ pub trait Lender {
 #[contractimpl]
 impl Common for FlashLoanCommon {
     fn init(e: Env, token_id: BytesN<32>, lp: Address) -> Result<(), Error> {
+        // the flash loan can't be re-initialized
         if is_initialized(&e) {
             return Err(Error::AlreadyInitialized);
         }
 
+        // we require the liquidity provider to be a contract as the flash loan with invoke it to deposit the fees
         if lp.contract_id().is_none() {
             return Err(Error::LPNotAContract);
         }
 
+        // write to storage
         set_token(&e, token_id);
         set_lp(&e, lp);
         Ok(())
@@ -56,11 +57,14 @@ impl Common for FlashLoanCommon {
 #[contractimpl]
 impl Borrow for FlashLoanBorrow {
     fn borrow(e: Env, receiver_id: Address, amount: i128) -> Result<(), Error> {
+        // the contract needs to be initialized before lending
         if !is_initialized(&e) {
             return Err(Error::NotInitialized);
         }
 
+        // assert that the receiver_id is a contract not an account
         if let Some(receiver_id_bytes) = receiver_id.contract_id() {
+            // load the flash loan's token and build the client
             let token_id: BytesN<32> = get_token_id(&e);
             let client = token::Client::new(&e, &token_id);
 
@@ -83,17 +87,22 @@ impl Borrow for FlashLoanBorrow {
 #[contractimpl]
 impl Lender for FlashLoanLender {
     fn withdraw(e: Env, lender: Address, amount: i128, to: Address) -> Result<(), Error> {
+        // the contract needs to be initialized
         if !is_initialized(&e) {
             return Err(Error::NotInitialized);
         }
 
+        // we assert that it's the flash loan admin calling and authorizing `withdraw`
         if lender != get_lp(&e) {
             return Err(Error::NotLP);
         }
         lender.require_auth();
 
+        // load the flash loan's token and build the client
         let token_id: BytesN<32> = get_token_id(&e);
         let client = token::Client::new(&e, &token_id);
+
+        // transfer the requested amount to `to`
         transfer(&e, &client, &to, &amount);
 
         Ok(())

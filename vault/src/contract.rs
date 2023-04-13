@@ -10,6 +10,12 @@ use crate::{
 use soroban_sdk::{contractimpl, Address, BytesN, Env};
 
 pub trait VaultContractTrait {
+    /// Initializes the vault
+    /// @param admin Vault admin, the only address that can interact with the vault.
+    /// @param token_id Token that the vault manages and pays rewards with.
+    /// @param flash_loan Address of the paired flash loan, same token as the vault.
+    /// @param flash_loan_bytes Bytes of the flash loan contract [should be deprecated give the new Address::contract_id() method]
+    /// @returns an error if the contract has already been initialized.
     fn initialize(
         e: Env,
         admin: Address,
@@ -18,6 +24,7 @@ pub trait VaultContractTrait {
         flash_loan_bytes: BytesN<32>,
     ) -> Result<(), Error>;
 
+    /// Deposits liquidity into the flash loan and mints shares
     fn deposit(e: Env, admin: Address, from: Address, amount: i128) -> Result<(), Error>;
 
     fn deposit_fees(e: Env, flash_loan: Address, amount: i128) -> Result<(), Error>;
