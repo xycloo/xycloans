@@ -55,7 +55,6 @@ fn vault_admin_auth() {
 
     let receiver_contract =
         e.register_contract(None, crate::flash_loan_receiver_standard::FlashLoanReceiver);
-    let receiver_contract_id = Address::from_contract_id(&e, &receiver_contract);
     let receiver_client = FlashLoanReceiverClient::new(&e, &receiver_contract);
 
     token.mint(&increment_contract_id, &1000000000);
@@ -113,8 +112,6 @@ fn vault_admin_invalid_auth() {
     let admin1 = Address::random(&e);
 
     let user1 = Address::random(&e);
-    let user2 = Address::random(&e);
-
     let not_user1 = Address::random(&e);
 
     let token_id = e.register_stellar_asset_contract(admin1);
@@ -126,15 +123,27 @@ fn vault_admin_invalid_auth() {
     let vault_id = Address::from_contract_id(&e, &vault_contract_id);
 
     let flash_loan_contract_id =
-        e.register_contract_wasm(&BytesN::from_array(&e, &[8; 32]), loan_ctr::WASM);
-    let flash_loan_id = Address::from_contract_id(&e, &flash_loan_contract_id);
+        e.register_contract_wasm(&BytesN::from_array(&e, &[23; 32]), loan_ctr::WASM);
     let flash_loan_client = loan_ctr::Client::new(&e, &flash_loan_contract_id);
+    let flash_loan_id = Address::from_contract_id(&e, &flash_loan_contract_id);
+
+    let increment_contract = e.register_contract(&BytesN::from_array(&e, &[2; 32]), BalIncrement);
+    let increment_contract_id = Address::from_contract_id(&e, &increment_contract);
+    let increment_client = BalIncrementClient::new(&e, &increment_contract);
+
+    let receiver_contract =
+        e.register_contract(None, crate::flash_loan_receiver_standard::FlashLoanReceiver);
+    let receiver_client = FlashLoanReceiverClient::new(&e, &receiver_contract);
+
+    token.mint(&increment_contract_id, &1000000000);
+
+    receiver_client.init(&user1, &token_id);
+    increment_client.init(&user1, &token_id);
 
     flash_loan_client.init(&token_id, &vault_id);
     vault_client.initialize(&user1, &token_id, &flash_loan_id, &flash_loan_contract_id);
 
     token.mint(&user1, &(10 * STROOP as i128));
-    token.mint(&user2, &(10 * STROOP as i128));
 
     let _res = vault_client.try_deposit(&not_user1, &user1, &(5 * STROOP as i128));
     assert_eq!(e.recorded_top_authorizations(), []);
