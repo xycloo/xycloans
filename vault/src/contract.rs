@@ -29,9 +29,9 @@ pub trait VaultContractTrait {
 
     fn deposit_fees(e: Env, flash_loan: Address, amount: i128) -> Result<(), Error>;
 
-    fn update_fee_rewards(e: Env, admin: Address, to: Address) -> Result<(), Error>;
+    fn update_fee_rewards(e: Env, addr: Address) -> Result<(), Error>;
 
-    fn withdraw_matured(e: Env, admin: Address, addr: Address) -> Result<(), Error>;
+    fn withdraw_matured(e: Env, addr: Address) -> Result<(), Error>;
 
     // needs to be re-implemented
     fn get_shares(e: Env, id: Address) -> i128;
@@ -39,7 +39,7 @@ pub trait VaultContractTrait {
     // should be removed by the end of the update
     fn get_increment(e: Env, id: Address) -> Result<i128, Error>;
 
-    fn withdraw(e: Env, admin: Address, addr: Address, amount: i128) -> Result<(), Error>;
+    fn withdraw(e: Env, addr: Address, amount: i128) -> Result<(), Error>;
 }
 
 pub struct VaultContract;
@@ -114,25 +114,34 @@ impl VaultContractTrait for VaultContract {
         Ok(())
     }
 
-    fn withdraw_matured(e: Env, admin: Address, addr: Address) -> Result<(), Error> {
+    fn withdraw_matured(e: Env, addr: Address) -> Result<(), Error> {
         // authenticate the admin and check authorization
-        auth_admin(&e, admin)?;
+        //        auth_admin(&e, admin)?; // auth here shouldn't be required since it locks user capital under the proxy
+
+        // require lender auth for withdrawal
+        addr.require_auth();
 
         // pay the matured yield
-        pay_matured(&e, addr);
+        pay_matured(&e, addr)?;
 
         Ok(())
     }
 
-    fn update_fee_rewards(e: Env, admin: Address, id: Address) -> Result<(), Error> {
-        auth_admin(&e, admin)?;
-        update_rewards(&e, id);
+    fn update_fee_rewards(e: Env, addr: Address) -> Result<(), Error> {
+        // authenticate the admin and check authorization
+        //        auth_admin(&e, admin)?; // auth here shouldn't be required since it locks user capital under the proxy
+
+        update_rewards(&e, addr);
 
         Ok(())
     }
 
-    fn withdraw(e: Env, admin: Address, addr: Address, amount: i128) -> Result<(), Error> {
-        auth_admin(&e, admin)?;
+    fn withdraw(e: Env, addr: Address, amount: i128) -> Result<(), Error> {
+        // authenticate the admin and check authorization
+        //        auth_admin(&e, admin)?; // auth here shouldn't be required since it locks user capital under the proxy
+
+        // require lender auth for withdrawal
+        addr.require_auth();
 
         // construct the token client we'll use later on
         let token_client = get_token_client(&e);
@@ -140,7 +149,8 @@ impl VaultContractTrait for VaultContract {
         let addr_balance = read_balance(&e, addr.clone());
 
         // if the desired burned shares are more than the lender's balance return an error
-        if addr_balance < amount {
+        // if the amount is 0 return an error to save gas
+        if addr_balance < amount || amount == 0 {
             return Err(Error::InvalidShareBalance);
         }
 

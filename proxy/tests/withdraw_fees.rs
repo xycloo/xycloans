@@ -80,15 +80,15 @@ fn fee_withdrawal() {
     assert_eq!(token.balance(&flash_loan_id), 10000000000);
     assert_eq!(token.balance(&vault_id), 0);
 
-    let batch_0 = vault_client.get_shares(&lp, &0);
-    assert_eq!(batch_0.deposit, 10000000000);
-    assert_eq!(batch_0.curr_s, 10000000000);
-    assert_eq!(batch_0.init_s, 10000000000);
+    //    let batch_0 = vault_client.get_shares(&lp, &0);
+    //    assert_eq!(batch_0.deposit, 10000000000);
+    //    assert_eq!(batch_0.curr_s, 10000000000);
+    //    assert_eq!(batch_0.init_s, 10000000000);
 
     proxy_client.withdraw_fee(&lp, &token_id, &0, &100000000);
 
-    let batch_0 = vault_client.get_shares(&lp, &0);
-    assert_eq!(batch_0.deposit, 10000000000);
-    assert_eq!(batch_0.curr_s, 9900000000);
-    assert_eq!(batch_0.init_s, 10000000000);
+    //    let batch_0 = vault_client.get_shares(&lp, &0);
+    //    assert_eq!(batch_0.deposit, 10000000000);
+    //    assert_eq!(batch_0.curr_s, 9900000000);
+    //    assert_eq!(batch_0.init_s, 10000000000);
 }

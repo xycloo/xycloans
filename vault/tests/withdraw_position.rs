@@ -77,16 +77,17 @@ fn withdraw_liquidity_position() {
     vault_client.deposit(&user1, &user2, &(100 * STROOP as i128));
     assert_eq!(token.balance(&user2), 0);
 
-    vault_client.update_fee_rewards(&user1, &user2);
-    vault_client.withdraw_matured(&user1, &user2);
+    vault_client.update_fee_rewards(&user2);
+    let res = vault_client.try_withdraw_matured(&user2);
+    assert!(res.is_err()); // error since no fees have been generated yet
     assert_eq!(token.balance(&user2), 0);
 
     // the flash loan is used and the receiver contract successfully re-pays the loan + a fee of half a tenth of a stroop
     assert_eq!(token.balance(&flash_loan_id), (150 * STROOP as i128));
     flash_loan_client.borrow(&receiver_contract_id, &(100 * STROOP as i128));
 
-    vault_client.update_fee_rewards(&user1, &user2);
-    vault_client.withdraw_matured(&user1, &user2);
+    vault_client.update_fee_rewards(&user2);
+    vault_client.withdraw_matured(&user2);
 
     let error = 33;
 
@@ -95,11 +96,11 @@ fn withdraw_liquidity_position() {
             && token.balance(&user2) <= 2 * (STROOP / 10) as i128 / (2 * 3) + error
     ); // 2/3 of the fee from the borrow at line 87 => 2/3 of half a tenth of a stroop (0.05% of 100 * 1e7). We can tolerate a small error given by periodic numbers (it should be 333333 but it's actually 333300)
 
-    vault_client.withdraw(&user1, &user1, &(25 * STROOP as i128));
+    vault_client.withdraw(&user1, &(25 * STROOP as i128));
     assert_eq!(token.balance(&flash_loan_id), (125 * STROOP) as i128);
     assert_eq!(token.balance(&user1), (75 * STROOP) as i128);
 
-    vault_client.withdraw_matured(&user1, &user1);
+    vault_client.withdraw_matured(&user1);
 
     assert!(
         token.balance(&user1) >= 75 * STROOP as i128 + (STROOP / 10) as i128 / (2 * 3) - error
@@ -111,8 +112,8 @@ fn withdraw_liquidity_position() {
     assert_eq!(token.balance(&flash_loan_id), (125 * STROOP as i128));
     flash_loan_client.borrow(&receiver_contract_id, &(100 * STROOP as i128));
 
-    vault_client.update_fee_rewards(&user1, &user1);
-    vault_client.withdraw_matured(&user1, &user1);
+    vault_client.update_fee_rewards(&user1);
+    vault_client.withdraw_matured(&user1);
 
     assert!(
         token.balance(&user1)

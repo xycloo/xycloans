@@ -110,7 +110,7 @@ impl LPTrait for ProxyLP {
     }
 
     fn withdraw_fee(env: Env, lender: Address, token_contract_id: BytesN<32>) -> Result<(), Error> {
-        lender.require_auth();
+        //        lender.require_auth(); // auth isn't required here as we require it in the vault directly
         vault_withdraw_matured_fees(&env, lender, token_contract_id)?;
 
         Ok(())
@@ -122,12 +122,12 @@ impl LPTrait for ProxyLP {
         token_contract_id: BytesN<32>,
         shares: i128,
     ) -> Result<(), Error> {
-        lender.require_auth();
+        //        lender.require_auth(); // auth isn't required here as we require it in the vault directly
 
         let vault = get_vault(&env, token_contract_id)?;
         let vault_client = Client::new(&env, &vault);
 
-        vault_client.withdraw(&env.current_contract_address(), &lender, &shares);
+        vault_client.withdraw(&lender, &shares);
         Ok(())
     }
 }

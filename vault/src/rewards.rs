@@ -10,7 +10,7 @@ use soroban_sdk::{Address, Env};
 
 pub fn update_rewards(e: &Env, addr: Address) {
     // loading storage variables
-    let total_supply = get_tot_supply(e);
+    //    let total_supply = get_tot_supply(e);
     //    let collected_last_recorded = get_collected_last_recorded(e);
     let fee_per_share_universal = get_fee_per_share_universal(e);
 
@@ -46,13 +46,19 @@ pub fn update_fee_per_share_universal(e: &Env, collected: i128) {
     //    put_collected_last_recorded(e, 0);
 }
 
-pub fn pay_matured(e: &Env, addr: Address) {
+pub fn pay_matured(e: &Env, addr: Address) -> Result<(), Error> {
     let token_client = get_token_client(e);
 
     // collect all the fees matured by the lender `addr`
     let matured = read_matured_fees_particular(e, addr.clone());
 
+    if matured == 0 {
+        return Err(Error::NoFeesMatured);
+    }
+
     // transfer the matured yield to `addr` and update the particular matured fees storage slot
     transfer(e, &token_client, &addr, matured);
     write_matured_fees_particular(e, addr, 0);
+
+    Ok(())
 }

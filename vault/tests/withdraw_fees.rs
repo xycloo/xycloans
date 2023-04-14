@@ -55,10 +55,10 @@ fn fee_withdraw_multiple_users() {
     token.mint(&flash_loan_id, &(10 * STROOP as i128));
     vault_client.deposit_fees(&flash_loan_id, &(10 * STROOP as i128));
 
-    vault_client.update_fee_rewards(&user1, &user1);
-    vault_client.update_fee_rewards(&user1, &user2);
-    vault_client.withdraw_matured(&user1, &user2);
-    vault_client.withdraw_matured(&user1, &user1);
+    vault_client.update_fee_rewards(&user1);
+    vault_client.update_fee_rewards(&user2);
+    vault_client.withdraw_matured(&user2);
+    vault_client.withdraw_matured(&user1);
 
     assert_eq!(token.balance(&user1), 33333300);
     assert_eq!(token.balance(&user2), 66666600);
@@ -73,10 +73,10 @@ fn fee_withdraw_multiple_users() {
     token.mint(&user2, &(150 * STROOP as i128));
     vault_client.deposit(&user1, &user2, &(150 * STROOP as i128));
 
-    vault_client.update_fee_rewards(&user1, &user2);
-    vault_client.withdraw_matured(&user1, &user2);
-    vault_client.update_fee_rewards(&user1, &user1);
-    vault_client.withdraw_matured(&user1, &user1);
+    vault_client.update_fee_rewards(&user2);
+    vault_client.withdraw_matured(&user2);
+    vault_client.update_fee_rewards(&user1);
+    vault_client.withdraw_matured(&user1);
 
     assert_eq!(token.balance(&user1), 66666600); // should receive 1/3 of the deposited fees ~= 3.3 * 1e7 since at the time of the fees deposit user1 held 1/3 of the total supply
     assert_eq!(token.balance(&user2), 66666600 * 2); // should receive 2/3 of the deposited fees =~ 6.6 * 1e7 since at the time of the fees deposit user1 held 2/3 of the total supply. The new deposit at line 76 shouldn't have infuence since the deposited liquidity didn't contribute to the generation of the fees.

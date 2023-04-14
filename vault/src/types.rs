@@ -25,7 +25,7 @@ pub enum Error {
     VaultAlreadyInitialized = 0,
     InvalidAdminAuth = 1,
     InvalidShareBalance = 2, // needs change
-    BatchDoesntExist = 3,    // depreacted
+    NoFeesMatured = 3,
 }
 /*
 #[derive(Clone)]

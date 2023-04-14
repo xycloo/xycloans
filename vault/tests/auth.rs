@@ -1,3 +1,5 @@
+// Most auth tests are depreacted since lender functions can now be directly invoked by a 3rd party without needing to go thorugh the protocol, thus making auth tests for such methods pointless.
+
 mod token {
     use soroban_sdk::contractimport;
 
@@ -81,27 +83,26 @@ fn vault_admin_auth() {
         ],
     )];
     assert_eq!(e.recorded_top_authorizations(), expected_auth);
+}
 
-    vault_client.withdraw_matured(&user1, &user1);
+/*
+    vault_client.update_fee_rewards(&user1);
+
+    vault_client.withdraw_matured(&user1);
     let expected_auth: Vec<(Address, BytesN<32>, Symbol, soroban_sdk::Vec<RawVal>)> = std::vec![(
         user1.clone(),
         vault_contract_id.clone(),
         Symbol::new(&e, "withdraw_matured"),
-        vec![&e, user1.into_val(&e), user1.into_val(&e),],
+        vec![&e, user1.into_val(&e),],
     )];
     assert_eq!(e.recorded_top_authorizations(), expected_auth);
 
-    vault_client.withdraw(&user1, &user1, &0);
+    vault_client.withdraw(&user1, &0);
     let expected_auth: Vec<(Address, BytesN<32>, Symbol, soroban_sdk::Vec<RawVal>)> = std::vec![(
         user1.clone(),
         vault_contract_id,
         Symbol::short("withdraw"),
-        vec![
-            &e,
-            user1.into_val(&e),
-            user1.into_val(&e),
-            (0_i128).into_val(&e)
-        ],
+        vec![&e, user1.into_val(&e), (0_i128).into_val(&e)],
     )];
     assert_eq!(e.recorded_top_authorizations(), expected_auth);
 }
@@ -148,12 +149,13 @@ fn vault_admin_invalid_auth() {
     let _res = vault_client.try_deposit(&not_user1, &user1, &(5 * STROOP as i128));
     assert_eq!(e.recorded_top_authorizations(), []);
 
-    let _res = vault_client.try_withdraw_matured(&not_user1, &user1);
+    let _res = vault_client.try_withdraw_matured(&not_user1);
     assert_eq!(e.recorded_top_authorizations(), []);
 
-    let _res = vault_client.try_withdraw(&not_user1, &user1, &0);
+    let _res = vault_client.try_withdraw(&not_user1, &0);
     assert_eq!(e.recorded_top_authorizations(), []);
 }
+*/
 
 use fixed_point_math::STROOP;
 

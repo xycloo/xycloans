@@ -70,7 +70,7 @@ pub fn vault_withdraw_matured_fees(
 ) -> Result<(), Error> {
     let vault_client = vault::Client::new(env, &get_vault(env, token_contract_id)?);
 
-    vault_client.withdraw_matured(&env.current_contract_address(), &provider);
+    vault_client.withdraw_matured(&provider);
 
     Ok(())
 }
