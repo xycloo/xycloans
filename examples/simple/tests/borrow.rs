@@ -8,6 +8,12 @@ mod token {
     contractimport!(file = "../../soroban_token_spec.wasm");
 }
 
+mod vault {
+    use soroban_sdk::contractimport;
+
+    contractimport!(file = "../../target/wasm32-unknown-unknown/release/xycloans_fl_vault.wasm");
+}
+
 mod loan_ctr {
     use soroban_sdk::contractimport;
 
@@ -29,55 +35,63 @@ mod receiver_ctr {
     contractimport!(file = "../../target/wasm32-unknown-unknown/release/simple.wasm");
 }
 
+const STROOP: i128 = 10000000;
+
 #[test]
 fn test_successful_borrow() {
-    let env = Env::default();
+    let e: Env = Default::default();
+    let admin1 = Address::random(&e);
 
-    // Beginning of liquidity provider setup and invocations, this part won't be of much interest to developers who only seek to borrow from our flash loans without becoming a liquidity provider/lender
-    let u1 = Address::random(&env);
-    let lp1 = Address::random(&env);
+    let user1 = Address::random(&e);
+    let user2 = Address::random(&e);
+
+    let token_id = e.register_stellar_asset_contract(admin1);
+    let token = token::Client::new(&e, &token_id);
+
+    let vault_contract_id =
+        e.register_contract_wasm(&BytesN::from_array(&e, &[5; 32]), vault::WASM);
+    let vault_client = vault::Client::new(&e, &vault_contract_id);
+    let vault_id = Address::from_contract_id(&e, &vault_contract_id);
 
     let flash_loan_contract_id =
-        env.register_contract_wasm(&BytesN::from_array(&env, &[5; 32]), loan_ctr::WASM);
-    let flash_loan_client = loan_ctr::Client::new(&env, &flash_loan_contract_id);
-    let flash_loan_addr = Address::from_contract_id(&env, &flash_loan_contract_id);
-
-    let token_id = env.register_stellar_asset_contract(u1.clone());
-    let token = token::Client::new(&env, &token_id);
-
-    token.mint(&lp1, &1000000000);
-    token.transfer(
-        &lp1,
-        &Address::from_contract_id(&env, &flash_loan_contract_id),
-        &1000000000,
-    );
-
-    flash_loan_client.init(&token_id, &lp1);
+        e.register_contract_wasm(&BytesN::from_array(&e, &[23; 32]), loan_ctr::WASM);
+    let flash_loan_client = loan_ctr::Client::new(&e, &flash_loan_contract_id);
+    let flash_loan_id = Address::from_contract_id(&e, &flash_loan_contract_id);
 
     // Beginning of "developer invocations"
 
-    let receiver_contract = env.register_contract_wasm(None, receiver_ctr::WASM);
-    let receiver_client = receiver_ctr::Client::new(&env, &receiver_contract);
+    let receiver_contract = e.register_contract_wasm(None, receiver_ctr::WASM);
+    let receiver_client = receiver_ctr::Client::new(&e, &receiver_contract);
 
-    receiver_client.init(&token_id, &flash_loan_addr, &1000000);
+    receiver_client.init(&token_id, &flash_loan_id, &(100 * STROOP));
 
-    // These `100 $USDC` below are the profits the receiver contract would make. We simply mint the contract some tokens without performing any cdp or arbitrage trading action since it's beyond the scope of the quickstart.
-    token.mint(&Address::from_contract_id(&env, &receiver_contract), &1000);
+    flash_loan_client.init(&token_id, &vault_id);
+    vault_client.initialize(&user1, &token_id, &flash_loan_id, &flash_loan_contract_id);
+
+    token.mint(&user1, &(100 * STROOP));
+    token.mint(&user2, &(100 * STROOP));
+
+    token.mint(
+        &Address::from_contract_id(&e, &receiver_contract),
+        &(STROOP),
+    );
+
+    vault_client.deposit(&user1, &user1, &(100 * STROOP));
 
     // Borrowing from the lender, this invocation will result in an invocation to your receiver contract (the one you wrote in `lib.rs`)
     flash_loan_client.borrow(
-        &Address::from_contract_id(&env, &receiver_contract),
-        &1000000,
+        &Address::from_contract_id(&e, &receiver_contract),
+        &(100 * STROOP),
     );
 
     assert_eq!(
-        token.balance(&Address::from_contract_id(&env, &receiver_contract)),
-        500
+        token.balance(&Address::from_contract_id(&e, &receiver_contract)),
+        9500000
     );
 
     assert_eq!(
-        token.balance(&Address::from_contract_id(&env, &flash_loan_contract_id)),
-        1000000000
+        token.balance(&Address::from_contract_id(&e, &flash_loan_contract_id)),
+        100 * STROOP
     );
 }
 

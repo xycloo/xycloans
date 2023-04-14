@@ -63,21 +63,14 @@ pub fn get_flash_loan(env: &Env, token_contract_id: BytesN<32>) -> Result<BytesN
     }
 }
 
-pub fn vault_withdraw_fees(
+pub fn vault_withdraw_matured_fees(
     env: &Env,
     provider: Address,
     token_contract_id: BytesN<32>,
-    batch_n: i128,
-    shares: i128,
 ) -> Result<(), Error> {
     let vault_client = vault::Client::new(env, &get_vault(env, token_contract_id)?);
 
-    vault_client.withdraw_fee(
-        &env.current_contract_address(),
-        &provider,
-        &batch_n,
-        &shares,
-    );
+    vault_client.withdraw_matured(&provider);
 
     Ok(())
 }

@@ -1,12 +1,21 @@
 use crate::{
+    balance::{burn_shares, mint_shares},
     flash_loan,
-    math::{compute_deposit_ratio, compute_fee_amount, compute_shares_amount},
+    math::{compute_deposit, compute_shares_amount},
+    rewards::{pay_matured, update_fee_per_share_universal, update_rewards},
     storage::*,
-    types::{BatchObj, Error},
+    token_utility::{get_token_client, read_flash_loan_balance, transfer_into_flash_loan},
+    types::Error,
 };
 use soroban_sdk::{contractimpl, Address, BytesN, Env};
 
 pub trait VaultContractTrait {
+    /// Initializes the vault
+    /// @param admin Vault admin, the only address that can interact with the vault.
+    /// @param token_id Token that the vault manages and pays rewards with.
+    /// @param flash_loan Address of the paired flash loan, same token as the vault.
+    /// @param flash_loan_bytes Bytes of the flash loan contract [should be deprecated give the new Address::contract_id() method]
+    /// @returns an error if the contract has already been initialized.
     fn initialize(
         e: Env,
         admin: Address,
@@ -15,21 +24,22 @@ pub trait VaultContractTrait {
         flash_loan_bytes: BytesN<32>,
     ) -> Result<(), Error>;
 
-    fn deposit(e: Env, admin: Address, from: Address, amount: i128) -> Result<i128, Error>;
+    /// Deposits liquidity into the flash loan and mints shares
+    fn deposit(e: Env, admin: Address, from: Address, amount: i128) -> Result<(), Error>;
 
-    fn withdraw_fee(
-        e: Env,
-        admin: Address,
-        to: Address,
-        batch_ts: i128,
-        shares: i128,
-    ) -> Result<(), Error>;
+    fn deposit_fees(e: Env, flash_loan: Address, amount: i128) -> Result<(), Error>;
 
-    fn get_shares(e: Env, id: Address, batch_ts: i128) -> Result<BatchObj, Error>;
+    fn update_fee_rewards(e: Env, addr: Address) -> Result<(), Error>;
 
+    fn withdraw_matured(e: Env, addr: Address) -> Result<(), Error>;
+
+    // needs to be re-implemented
+    fn get_shares(e: Env, id: Address) -> i128;
+
+    // should be removed by the end of the update
     fn get_increment(e: Env, id: Address) -> Result<i128, Error>;
 
-    fn withdraw(e: Env, admin: Address, to: Address) -> Result<(), Error>;
+    fn withdraw(e: Env, addr: Address, amount: i128) -> Result<(), Error>;
 }
 
 pub struct VaultContract;
@@ -55,8 +65,30 @@ impl VaultContractTrait for VaultContract {
         Ok(())
     }
 
-    fn deposit(e: Env, admin: Address, from: Address, amount: i128) -> Result<i128, Error> {
+    fn deposit_fees(e: Env, flash_loan: Address, amount: i128) -> Result<(), Error> {
+        // we assert that it is the paired flash loan that is depositing the fees
+        flash_loan.require_auth();
+        let flash_loan_stored = get_flash_loan(&e);
+        if flash_loan != flash_loan_stored {
+            return Err(Error::InvalidAdminAuth);
+        }
+
+        // transfer the fees in the vault from the flash loan contract
+        let client = get_token_client(&e);
+        client.transfer(&flash_loan, &e.current_contract_address(), &amount);
+
+        // update the universal fee per share amount here to avoid the need for a collected_last_recorded storage slot.
+        update_fee_per_share_universal(&e, amount);
+
+        Ok(())
+    }
+
+    fn deposit(e: Env, admin: Address, from: Address, amount: i128) -> Result<(), Error> {
+        // authenticate the admin and check authorization
         auth_admin(&e, admin)?;
+
+        // we update the rewards before the deposit to avoid the abuse of the collected fees by withdrawing them with liquidity that didn't contribute to their generation.
+        update_rewards(&e, from.clone());
 
         // construct the token client we'll use later on
         let token_client = get_token_client(&e);
@@ -66,119 +98,94 @@ impl VaultContractTrait for VaultContract {
         let shares = if 0 == total_supply {
             amount
         } else {
-            compute_shares_amount(amount, total_supply, get_token_balance(&e, &token_client))
+            compute_shares_amount(
+                amount,
+                total_supply,
+                read_flash_loan_balance(&e, &token_client), // shares are calculated for the liquidity, since fees aren't re-invested as liquidity we only count the flash loan contract's balance.
+            )
         };
 
         // transfer the funds into the flash loan
         transfer_into_flash_loan(&e, &token_client, &from, &amount);
 
-        let increment = mint_shares(&e, from.clone(), shares, amount);
-        if increment != 0 {
-            let total_deposit = get_initial_deposit(&e, from.clone()) + amount;
-            set_initial_deposit(&e, from, total_deposit);
-        } else {
-            set_initial_deposit(&e, from, amount);
-        }
-
-        Ok(increment)
-    }
-
-    fn withdraw_fee(
-        e: Env,
-        admin: Address,
-        to: Address,
-        batch_n: i128,
-        shares: i128,
-    ) -> Result<(), Error> {
-        auth_admin(&e, admin)?;
-
-        // construct the token client we'll use later on
-        let token_client = get_token_client(&e);
-
-        if let Some(Ok(batch)) = get_batch(&e, to.clone(), batch_n) {
-            let total_supply = get_tot_supply(&e);
-            let total_balance = get_token_balance(&e, &token_client);
-
-            if batch.curr_s < shares {
-                return Err(Error::InvalidShareBalance);
-            }
-
-            let new_deposit = compute_deposit_ratio(batch.deposit, shares, batch.init_s);
-            let fee_amount = compute_fee_amount(new_deposit, shares, total_supply, total_balance);
-
-            transfer(&e, &to, fee_amount);
-            burn_shares(&e, to.clone(), shares, batch_n);
-
-            let new_tot_supply = total_supply - shares;
-            let new_tot_bal = total_balance - fee_amount;
-
-            let new_shares = if total_balance != new_deposit {
-                compute_shares_amount(new_deposit, new_tot_supply, new_tot_bal - new_deposit)
-            } else {
-                compute_shares_amount(new_deposit, total_supply, new_deposit)
-            };
-
-            mint_shares(&e, to, new_shares, new_deposit);
-        } else {
-            return Err(Error::BatchDoesntExist);
-        }
+        // mint the new shares to the lender
+        mint_shares(&e, from, shares);
 
         Ok(())
     }
 
-    fn withdraw(e: Env, admin: Address, to: Address) -> Result<(), Error> {
-        auth_admin(&e, admin)?;
+    fn withdraw_matured(e: Env, addr: Address) -> Result<(), Error> {
+        // authenticate the admin and check authorization
+        //        auth_admin(&e, admin)?; // auth here shouldn't be required since it locks user capital under the proxy
+
+        // require lender auth for withdrawal
+        addr.require_auth();
+
+        // pay the matured yield
+        pay_matured(&e, addr)?;
+
+        Ok(())
+    }
+
+    fn update_fee_rewards(e: Env, addr: Address) -> Result<(), Error> {
+        // authenticate the admin and check authorization
+        //        auth_admin(&e, admin)?; // auth here shouldn't be required since it locks user capital under the proxy
+
+        update_rewards(&e, addr);
+
+        Ok(())
+    }
+
+    fn withdraw(e: Env, addr: Address, amount: i128) -> Result<(), Error> {
+        // authenticate the admin and check authorization
+        //        auth_admin(&e, admin)?; // auth here shouldn't be required since it locks user capital under the proxy
+
+        // require lender auth for withdrawal
+        addr.require_auth();
 
         // construct the token client we'll use later on
         let token_client = get_token_client(&e);
 
-        let increment = get_increment(&e, to.clone());
+        let addr_balance = read_balance(&e, addr.clone());
 
-        let mut amount: i128 = 0;
-        let mut temp_supply: i128 = get_tot_supply(&e);
-        let mut temp_balance: i128 = get_token_balance(&e, &token_client);
-
-        for batch_n in 0..increment {
-            if let Some(Ok(batch)) = get_batch(&e, to.clone(), batch_n) {
-                let withdrawable_shares = batch.curr_s;
-                let new_deposit =
-                    compute_deposit_ratio(batch.deposit, withdrawable_shares, batch.init_s);
-                let fee_amount =
-                    compute_fee_amount(new_deposit, withdrawable_shares, temp_supply, temp_balance);
-
-                amount += fee_amount;
-                temp_balance -= fee_amount;
-                temp_supply -= withdrawable_shares;
-
-                burn_shares(&e, to.clone(), withdrawable_shares, batch_n);
-
-                if temp_balance != new_deposit {
-                    temp_supply +=
-                        compute_shares_amount(new_deposit, temp_supply, temp_balance - new_deposit)
-                } else {
-                    temp_supply += compute_shares_amount(new_deposit, temp_supply, new_deposit)
-                }
-            }
+        // if the desired burned shares are more than the lender's balance return an error
+        // if the amount is 0 return an error to save gas
+        if addr_balance < amount || amount == 0 {
+            return Err(Error::InvalidShareBalance);
         }
 
-        let initial_deposit = get_initial_deposit(&e, to.clone());
+        let total_supply = get_tot_supply(&e);
+
+        // compute addr's deposit corresponding to the burned shares
+        let addr_deposit = compute_deposit(
+            amount,
+            total_supply,
+            read_flash_loan_balance(&e, &token_client),
+        );
+
+        // update addr's rewards
+        update_rewards(&e, addr.clone());
+        //        pay_matured(&e, addr.clone());
+
+        // pay out the corresponding deposit
         let flash_loan_id_bytes = get_flash_loan_bytes(&e);
         let flash_loan_client = flash_loan::Client::new(&e, &flash_loan_id_bytes);
-        flash_loan_client.withdraw(&get_contract_addr(&e), &initial_deposit, &to);
-        transfer(&e, &to, amount);
+        flash_loan_client.withdraw(&e.current_contract_address(), &addr_deposit, &addr);
+
+        // burn the shares
+        burn_shares(&e, addr, amount);
 
         Ok(())
     }
 
-    fn get_shares(e: Env, id: Address, batch_n: i128) -> Result<BatchObj, Error> {
-        if let Some(Ok(batch_obj)) = get_batch(&e, id, batch_n) {
-            Ok(batch_obj)
-        } else {
-            Err(Error::BatchDoesntExist)
-        }
+    fn get_shares(e: Env, id: Address) -> i128 {
+        //        get_collected_last_recorded(&e)
+        //read_matured_fees_particular(&e, id)
+        //        read_fee_per_share_particular(&e, id)
+        0
     }
 
     fn get_increment(e: Env, id: Address) -> Result<i128, Error> {
-        Ok(get_increment(&e, id))
+        Ok(0)
     }
 }

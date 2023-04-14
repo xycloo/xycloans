@@ -9,6 +9,7 @@ pub enum Error {
     GenericLend = 3,
     LoanNotRepaid = 4,
     NotLP = 5,
+    LPNotAContract = 6,
 }
 
 #[contracttype]

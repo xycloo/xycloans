@@ -1,8 +1,11 @@
 #![no_std]
 
+mod balance;
 mod contract;
 mod math;
+mod rewards;
 mod storage;
+mod token_utility;
 mod types;
 
 mod token {

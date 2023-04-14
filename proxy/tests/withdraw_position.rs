@@ -78,13 +78,10 @@ fn liquidity_withdrawal() {
     proxy_client.deposit(&lp, &token_id, &40000000000);
     proxy_client.deposit(&lp, &token_id, &10000000000);
 
-    token.mint(&vault_id, &1000000);
-
     assert_eq!(token.balance(&lp), 0);
     assert_eq!(token.balance(&flash_loan_id), 50000000000);
-    assert_eq!(token.balance(&vault_id), 1000000);
 
-    proxy_client.withdraw_all(&lp, &token_id);
+    proxy_client.withdraw_liquidity(&lp, &token_id, &50000000000);
 
-    assert_eq!(token.balance(&lp), 50000000000 + 1000000);
+    assert_eq!(token.balance(&lp), 50000000000);
 }
