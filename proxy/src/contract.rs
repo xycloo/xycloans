@@ -35,8 +35,17 @@ pub trait LPTrait {
         amount: i128,
     ) -> Result<(), Error>;
 
-    /// Withdraw fees for a certain amount of shares of a batch
-    fn withdraw_fee(env: Env, lender: Address, token_contract_id: BytesN<32>) -> Result<(), Error>;
+    fn update_rewards(
+        env: Env,
+        lender: Address,
+        token_contract_id: BytesN<32>,
+    ) -> Result<(), Error>;
+
+    fn withdraw_matured(
+        env: Env,
+        lender: Address,
+        token_contract_id: BytesN<32>,
+    ) -> Result<(), Error>;
 
     fn withdraw_liquidity(
         env: Env,
@@ -109,7 +118,23 @@ impl LPTrait for ProxyLP {
         Ok(())
     }
 
-    fn withdraw_fee(env: Env, lender: Address, token_contract_id: BytesN<32>) -> Result<(), Error> {
+    fn update_rewards(
+        env: Env,
+        lender: Address,
+        token_contract_id: BytesN<32>,
+    ) -> Result<(), Error> {
+        let vault = get_vault(&env, token_contract_id)?;
+        let vault_client = Client::new(&env, &vault);
+
+        vault_client.update_fee_rewards(&lender);
+        Ok(())
+    }
+
+    fn withdraw_matured(
+        env: Env,
+        lender: Address,
+        token_contract_id: BytesN<32>,
+    ) -> Result<(), Error> {
         //        lender.require_auth(); // auth isn't required here as we require it in the vault directly
         vault_withdraw_matured_fees(&env, lender, token_contract_id)?;
 

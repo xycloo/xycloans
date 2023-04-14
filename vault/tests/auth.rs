@@ -1,4 +1,4 @@
-// Most auth tests are depreacted since lender functions can now be directly invoked by a 3rd party without needing to go thorugh the protocol, thus making auth tests for such methods pointless.
+// Some auth tests are depreacted since lender functions (excluding depositing) can now be directly invoked by a 3rd party without needing to go thorugh the protocol, thus making auth tests for such methods pointless.
 
 mod token {
     use soroban_sdk::contractimport;
