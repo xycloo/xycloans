@@ -75,7 +75,7 @@ impl VaultContractTrait for VaultContract {
 
         // transfer the fees in the vault from the flash loan contract
         let client = get_token_client(&e);
-        client.transfer(&flash_loan, &e.current_contract_address(), &amount);
+        client.xfer(&flash_loan, &e.current_contract_address(), &amount);
 
         // update the universal fee per share amount here to avoid the need for a collected_last_recorded storage slot.
         update_fee_per_share_universal(&e, amount);

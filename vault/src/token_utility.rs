@@ -6,11 +6,11 @@ use crate::{
 };
 
 pub fn transfer(e: &Env, client: &token::Client, to: &Address, amount: i128) {
-    client.transfer(&e.current_contract_address(), to, &amount);
+    client.xfer(&e.current_contract_address(), to, &amount);
 }
 
 pub fn transfer_into_flash_loan(e: &Env, client: &token::Client, from: &Address, amount: &i128) {
-    client.transfer(from, &get_flash_loan(e), amount);
+    client.xfer(from, &get_flash_loan(e), amount);
 }
 
 pub fn get_token_client(e: &Env) -> token::Client {

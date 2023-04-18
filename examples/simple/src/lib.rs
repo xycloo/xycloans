@@ -42,7 +42,7 @@ impl receiver_interface::Contract for FlashLoanReceiverContract {
             .unwrap()
             .unwrap();
         let total_amount = borrowed + compute_fee(&borrowed);
-        token_client.increase_allowance(
+        token_client.incr_allow(
             &e.current_contract_address(),
             &e.storage()
                 .get::<Symbol, Address>(&Symbol::short("FL"))
