@@ -1,8 +1,6 @@
 # xycLoans Protocol
 ### Flash loans and liquidity protocol on Soroban
 
-<hr/>
-
 XycLoans is a flash loans protocol implemented for the Soroban Virtual Machine. 
 The protocol manages its liquidity through its vaults, where lenders provide liquidity in exchange of yield generated from flash loan fees.
 
@@ -10,7 +8,6 @@ With xycLoans, contracts will be able to flash loan any available amount of liqu
 
 The protocol is structured in pools made of `vault + flash_loan` pair where the primary focus is to keep pools a closed circuit and completely liquidity provider controlled without inferring any rules on the deposited liquidity.
 
-<hr/>
 
 ### Links
 - whitepaper [we're rewriting the whitepaper, we'll publish it soon!]
