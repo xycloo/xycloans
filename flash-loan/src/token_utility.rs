@@ -43,8 +43,11 @@ pub fn try_repay(
     // xfer back the lent capital + fees from the receiver contract to the flash loan
     xfer_from_to_fl(e, client, receiver_id, &(amount + fees))?;
 
+    let lp = get_lp(e);
+    transfer(e, client, &lp, &fees);
+
     // deposit fees into the vault
-    let vault_contract_id = get_lp(e).contract_id().unwrap(); // safe since we require lp to be a contract upon initialization
+    let vault_contract_id = lp.contract_id().unwrap(); // safe since we require lp to be a contract upon initialization
     vault::Client::new(e, &vault_contract_id).deposit_fees(&e.current_contract_address(), &fees);
 
     Ok(())
