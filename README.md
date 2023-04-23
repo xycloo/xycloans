@@ -1,18 +1,17 @@
-# XycLoans Protocol
-### A flash loans protocol on Soroban
+# xycLoans Protocol
+### Flash loans and liquidity protocol on Soroban
 
-<hr/>
+XycLoans is a flash loans protocol implemented for the Soroban Virtual Machine. 
+The protocol manages its liquidity through its vaults, where lenders provide liquidity in exchange of yield generated from flash loan fees.
 
-## Table of contents
-1. [Links](#links)
+With xycLoans, contracts will be able to flash loan any available amount of liquidity as long as they repay it within the same transaction. 
 
-### Links <a name="links"></a>
-- [Home (Soon)](#)
-- [Discord](#)
-- [Litepaper](https://github.com/xycloo/xycloans/blob/main/xycloans.pdf)
+The protocol is structured in pools made of `vault + flash_loan` pair where the primary focus is to keep pools a closed circuit and completely liquidity provider controlled without inferring any rules on the deposited liquidity.
 
-<hr/>
 
-Xycloans is a flash loans protocol built on Soroban. The protocol also has its own liquidity management, allowing investors to provide liquidity directly to the protocol and earn yield.
-
-We recommend reading the [Litepaper](https://github.com/xycloo/xycloans/blob/main/xycloans.pdf) to learn more about the protocol, how it is currently designed and how developers and the wider DeFi ecosystem benefits from flash loans.
+### Links
+- whitepaper [we're rewriting the whitepaper, we'll publish it soon!]
+- [discord server](https://discord.com/invite/w7fBhSS34Q)
+- [twitter](https://twitter.com/xyclooLabs)
+- [stellar community fund #12 winner](https://communityfund.stellar.org/projects/xycloans-scf-12)
+- [presentation video](https://www.youtube.com/watch?v=PUtyb2EE4e0)
