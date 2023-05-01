@@ -73,10 +73,6 @@ impl VaultContractTrait for VaultContract {
             return Err(Error::InvalidAdminAuth);
         }
 
-        // transfer the fees in the vault from the flash loan contract
-        //        let client = get_token_client(&e);
-        //        client.xfer(&flash_loan, &e.current_contract_address(), &amount);
-
         // update the universal fee per share amount here to avoid the need for a collected_last_recorded storage slot.
         update_fee_per_share_universal(&e, amount);
 
@@ -95,18 +91,16 @@ impl VaultContractTrait for VaultContract {
 
         // calculate the number of shares to mint
         let total_supply = get_tot_supply(&e);
+        let total_deposited = read_total_deposited(&e);
         let shares = if 0 == total_supply {
             amount
         } else {
-            compute_shares_amount(
-                amount,
-                total_supply,
-                read_flash_loan_balance(&e, &token_client), // shares are calculated for the liquidity, since fees aren't re-invested as liquidity we only count the flash loan contract's balance.
-            )
+            compute_shares_amount(amount, total_supply, total_deposited)
         };
 
         // transfer the funds into the flash loan
         transfer_into_flash_loan(&e, &token_client, &from, &amount);
+        write_total_deposited(&e, amount);
 
         // mint the new shares to the lender
         mint_shares(&e, from, shares);
@@ -128,18 +122,12 @@ impl VaultContractTrait for VaultContract {
     }
 
     fn update_fee_rewards(e: Env, addr: Address) -> Result<(), Error> {
-        // authenticate the admin and check authorization
-        //        auth_admin(&e, admin)?; // auth here shouldn't be required since it locks user capital under the proxy
-
         update_rewards(&e, addr);
 
         Ok(())
     }
 
     fn withdraw(e: Env, addr: Address, amount: i128) -> Result<(), Error> {
-        // authenticate the admin and check authorization
-        //        auth_admin(&e, admin)?; // auth here shouldn't be required since it locks user capital under the proxy
-
         // require lender auth for withdrawal
         addr.require_auth();
 

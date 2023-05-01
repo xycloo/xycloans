@@ -1,6 +1,4 @@
-use core::ops::{AddAssign, MulAssign};
-
-use soroban_sdk::{unwrap::UnwrapOptimized, vec, Address, BytesN, ConversionError, Env, Vec};
+use soroban_sdk::{Address, BytesN, Env};
 
 use crate::{
     token,
@@ -18,6 +16,16 @@ pub fn put_tot_supply(e: &Env, supply: i128) {
 
 pub fn get_tot_supply(e: &Env) -> i128 {
     let key = DataKey::TotSupply;
+    e.storage().get(&key).unwrap_or(Ok(0)).unwrap()
+}
+
+pub fn write_total_deposited(e: &Env, amount: i128) {
+    let key = DataKey::TotalDeposited;
+    e.storage().set(&key, &amount);
+}
+
+pub fn read_total_deposited(e: &Env) -> i128 {
+    let key = DataKey::TotalDeposited;
     e.storage().get(&key).unwrap_or(Ok(0)).unwrap()
 }
 
@@ -65,17 +73,6 @@ pub fn remove_matured_fees_particular(e: &Env, addr: Address) {
     let key = DataKey::MaturedFeesParticular(addr);
     e.storage().remove(&key)
 }
-
-/*
-// these two shouldn't be needed
-pub fn put_collected_last_recorded(e: &Env, last_recorded: i128) {
-    let key = DataKey::CollectedLastRecorded;
-    e.storage().set(&key, &last_recorded);
-}
-pub fn get_collected_last_recorded(e: &Env) -> i128 {
-    let key = DataKey::CollectedLastRecorded;
-    e.storage().get(&key).unwrap_or(Ok(0)).unwrap()
-}*/
 
 pub fn put_fee_per_share_universal(e: &Env, last_recorded: i128) {
     let key = DataKey::FeePerShareUniversal;
@@ -144,18 +141,6 @@ pub fn write_administrator(e: &Env, id: Address) {
     e.storage().set(&key, &id);
 }
 
-/*
-pub fn put_increment(e: &Env, id: Address, n: i128) {
-    e.storage().set(&DataKey::Increment(id), &n);
-}
-
-pub fn get_increment(e: &Env, id: Address) -> i128 {
-    e.storage()
-        .get(&DataKey::Increment(id))
-        .unwrap_or(Ok(0))
-        .unwrap()
-}*/
-
 pub fn auth_admin(e: &Env, admin: Address) -> Result<(), Error> {
     if read_admin(e) != admin {
         return Err(Error::InvalidAdminAuth);
@@ -163,17 +148,3 @@ pub fn auth_admin(e: &Env, admin: Address) -> Result<(), Error> {
     admin.require_auth();
     Ok(())
 }
-
-/*
-pub fn get_batch(e: &Env, id: Address, batch_n: i128) -> Option<Result<BatchObj, ConversionError>> {
-    let key = DataKey::Batch(BatchKey(id, batch_n));
-    e.storage().get(&key)
-}
-
-pub fn get_initial_deposit(e: &Env, id: Address) -> i128 {
-    e.storage().get(&DataKey::InitialDep(id)).unwrap().unwrap()
-}
-
-pub fn set_initial_deposit(e: &Env, id: Address, amount: i128) {
-    e.storage().set(&DataKey::InitialDep(id), &amount)
-}*/

@@ -6,16 +6,13 @@ pub enum DataKey {
     TokenId,
     Admin,
     TotSupply,
+    TotalDeposited,
     FlashLoan,
     FlashLoanB,
     Balance(Address),
-    //  CollectedLastRecorded, // deprecated, should be removed
     FeePerShareUniversal,
     FeePerShareParticular(Address),
     MaturedFeesParticular(Address),
-    //InitialDep(Address), // deprecated, should be removed
-    //    Batch(BatchKey),     // deprecated, should be removed
-    //    Increment(Address), // deprecated, should be removed
 }
 
 #[contracterror]
@@ -27,16 +24,3 @@ pub enum Error {
     InvalidShareBalance = 2, // needs change
     NoFeesMatured = 3,
 }
-/*
-#[derive(Clone)]
-#[contracttype]
-pub struct BatchKey(pub Address, pub i128); // depreacated
-
-#[derive(Clone)]
-#[contracttype]
-// deprecated
-pub struct BatchObj {
-    pub init_s: i128,
-    pub deposit: i128,
-    pub curr_s: i128,
-}*/
