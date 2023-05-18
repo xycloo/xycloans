@@ -1,9 +1,6 @@
-use soroban_sdk::{Address, Env};
+use soroban_sdk::{token, Address, Env};
 
-use crate::{
-    storage::{get_flash_loan, get_token_id},
-    token,
-};
+use crate::storage::{get_flash_loan, get_token_id};
 
 pub fn transfer(e: &Env, client: &token::Client, to: &Address, amount: i128) {
     client.xfer(&e.current_contract_address(), to, &amount);

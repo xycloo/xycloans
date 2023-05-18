@@ -1,13 +1,13 @@
-use soroban_sdk::{Address, Env};
+use soroban_sdk::{token, Address, Env};
 
-use crate::{storage::get_lp, token, types::Error, vault};
+use crate::{storage::get_lp, types::Error, vault};
 
 fn compute_fee(amount: &i128) -> i128 {
     amount / 2000 // 0.05%, still TBD
 }
 
 pub fn transfer(e: &Env, client: &token::Client, to: &Address, amount: &i128) {
-    client.xfer(&e.current_contract_address(), to, amount);
+    client.transfer(&e.current_contract_address(), to, amount);
 }
 
 pub fn xfer_from_to_fl(
@@ -17,7 +17,7 @@ pub fn xfer_from_to_fl(
     amount: &i128,
 ) -> Result<(), Error> {
     // catch the result of the `xfer_from` operation
-    let res = client.try_xfer_from(
+    let res = client.try_transfer_from(
         &e.current_contract_address(),
         from,
         &e.current_contract_address(),

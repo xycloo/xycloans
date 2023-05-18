@@ -1,9 +1,8 @@
-use soroban_sdk::{contractimpl, Address, BytesN, Env};
+use soroban_sdk::{contractimpl, token, Address, BytesN, Env};
 
 use crate::{
     execution::invoke_receiver,
     storage::{get_lp, get_token_id, is_initialized, set_lp, set_token},
-    token,
     token_utility::{transfer, try_repay},
     types::Error,
 };
