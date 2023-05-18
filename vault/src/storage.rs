@@ -1,9 +1,6 @@
-use soroban_sdk::{Address, BytesN, Env};
+use soroban_sdk::{token, Address, BytesN, Env};
 
-use crate::{
-    token,
-    types::{DataKey, Error},
-};
+use crate::types::{DataKey, Error};
 
 pub fn get_contract_addr(e: &Env) -> Address {
     e.current_contract_address()
@@ -84,12 +81,12 @@ pub fn get_fee_per_share_universal(e: &Env) -> i128 {
     e.storage().get(&key).unwrap_or(Ok(0)).unwrap()
 }
 
-pub fn put_token_id(e: &Env, token_id: BytesN<32>) {
+pub fn put_token_id(e: &Env, token_id: Address) {
     let key = DataKey::TokenId;
     e.storage().set(&key, &token_id);
 }
 
-pub fn get_token_id(e: &Env) -> BytesN<32> {
+pub fn get_token_id(e: &Env) -> Address {
     let key = DataKey::TokenId;
     e.storage().get(&key).unwrap().unwrap()
 }
@@ -104,15 +101,15 @@ pub fn get_flash_loan(e: &Env) -> Address {
     e.storage().get(&key).unwrap().unwrap()
 }
 
-pub fn put_flash_loan_bytes(e: &Env, id: BytesN<32>) {
-    let key = DataKey::FlashLoanB;
-    e.storage().set(&key, &id);
-}
+//pub fn put_flash_loan_bytes(e: &Env, id: BytesN<32>) {
+//    let key = DataKey::FlashLoanB;
+//    e.storage().set(&key, &id);
+//}
 
-pub fn get_flash_loan_bytes(e: &Env) -> BytesN<32> {
-    let key = DataKey::FlashLoanB;
-    e.storage().get(&key).unwrap().unwrap()
-}
+//pub fn get_flash_loan_bytes(e: &Env) -> BytesN<32> {
+//    let key = DataKey::FlashLoanB;
+//    e.storage().get(&key).unwrap().unwrap()
+//}
 
 // should be deprecated
 pub fn get_token_balance(e: &Env, client: &token::Client) -> i128 {
@@ -123,7 +120,7 @@ pub fn _transfer_in_vault(e: &Env, from: &Address, amount: &i128) {
     let client = token::Client::new(e, &get_token_id(e));
     let vault_addr = get_contract_addr(e);
 
-    client.xfer(from, &vault_addr, amount);
+    client.transfer(from, &vault_addr, amount);
 }
 
 pub fn has_administrator(e: &Env) -> bool {

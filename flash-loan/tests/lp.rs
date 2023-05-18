@@ -1,10 +1,9 @@
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
+use soroban_sdk::{testutils::Address as _, token, Address, BytesN, Env};
 
-mod token {
-    use soroban_sdk::contractimport;
-
-    contractimport!(file = "../soroban_token_spec.wasm");
-}
+//mod token {
+//    use soroban_sdk::contractimport;
+//    contractimport!(file = "../soroban_token_spec.wasm");
+//}
 
 mod loan_ctr {
     use soroban_sdk::contractimport;

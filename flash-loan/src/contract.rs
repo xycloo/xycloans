@@ -15,7 +15,7 @@ pub trait Common {
     /// Initializes the flash loan
     /// @param token_id token of the flash loan
     /// @param lp liquidity provider for the loan. In the Xycloans protocol the lp will always be the associated vault
-    fn init(e: Env, token_id: BytesN<32>, lp: Address) -> Result<(), Error>;
+    fn init(e: Env, token_id: Address, lp: Address) -> Result<(), Error>;
 }
 
 pub trait Borrow {
@@ -35,16 +35,16 @@ pub trait Lender {
 
 #[contractimpl]
 impl Common for FlashLoanCommon {
-    fn init(e: Env, token_id: BytesN<32>, lp: Address) -> Result<(), Error> {
+    fn init(e: Env, token_id: Address, lp: Address) -> Result<(), Error> {
         // the flash loan can't be re-initialized
         if is_initialized(&e) {
             return Err(Error::AlreadyInitialized);
         }
 
         // we require the liquidity provider to be a contract as the flash loan with invoke it to deposit the fees
-        if lp.contract_id().is_none() {
-            return Err(Error::LPNotAContract);
-        }
+        //        if lp.contract_id().is_none() {
+        //            return Err(Error::LPNotAContract);
+        //        }
 
         // write to storage
         set_token(&e, token_id);
@@ -61,25 +61,20 @@ impl Borrow for FlashLoanBorrow {
             return Err(Error::NotInitialized);
         }
 
-        // assert that the receiver_id is a contract not an account
-        if let Some(receiver_id_bytes) = receiver_id.contract_id() {
-            // load the flash loan's token and build the client
-            let token_id: BytesN<32> = get_token_id(&e);
-            let client = token::Client::new(&e, &token_id);
+        // load the flash loan's token and build the client
+        let token_id: Address = get_token_id(&e);
+        let client = token::Client::new(&e, &token_id);
 
-            // transfer `amount` to `receiver_id`
-            transfer(&e, &client, &receiver_id, &amount);
+        // transfer `amount` to `receiver_id`
+        transfer(&e, &client, &receiver_id, &amount);
 
-            // invoke the `exec_op()` function of the receiver contract
-            invoke_receiver(&e, &receiver_id_bytes);
+        // invoke the `exec_op()` function of the receiver contract
+        invoke_receiver(&e, &receiver_id);
 
-            // try `transfer_from()` of (`amount` + fees) from the receiver to the flash loan
-            try_repay(&e, &client, &receiver_id, &amount)?;
+        // try `transfer_from()` of (`amount` + fees) from the receiver to the flash loan
+        try_repay(&e, &client, &receiver_id, &amount)?;
 
-            Ok(())
-        } else {
-            Err(Error::GenericLend)
-        }
+        Ok(())
     }
 }
 
@@ -98,7 +93,7 @@ impl Lender for FlashLoanLender {
         lender.require_auth();
 
         // load the flash loan's token and build the client
-        let token_id: BytesN<32> = get_token_id(&e);
+        let token_id: Address = get_token_id(&e);
         let client = token::Client::new(&e, &token_id);
 
         // transfer the requested amount to `to`

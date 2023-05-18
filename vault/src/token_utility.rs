@@ -3,11 +3,11 @@ use soroban_sdk::{token, Address, Env};
 use crate::storage::{get_flash_loan, get_token_id};
 
 pub fn transfer(e: &Env, client: &token::Client, to: &Address, amount: i128) {
-    client.xfer(&e.current_contract_address(), to, &amount);
+    client.transfer(&e.current_contract_address(), to, &amount);
 }
 
 pub fn transfer_into_flash_loan(e: &Env, client: &token::Client, from: &Address, amount: &i128) {
-    client.xfer(from, &get_flash_loan(e), amount);
+    client.transfer(from, &get_flash_loan(e), amount);
 }
 
 pub fn get_token_client(e: &Env) -> token::Client {

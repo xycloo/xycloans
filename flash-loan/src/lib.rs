@@ -4,7 +4,9 @@
 //}
 
 mod vault {
-    soroban_sdk::contractimport!(file = "../contracts-wasm/xycloans_fl_vault.wasm");
+    soroban_sdk::contractimport!(
+        file = "../target/wasm32-unknown-unknown/release/xycloans_vault_interface.wasm"
+    );
 }
 
 mod contract;

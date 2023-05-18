@@ -47,8 +47,8 @@ pub fn try_repay(
     transfer(e, client, &lp, &fees);
 
     // deposit fees into the vault
-    let vault_contract_id = lp.contract_id().unwrap(); // safe since we require lp to be a contract upon initialization
-    vault::Client::new(e, &vault_contract_id).deposit_fees(&e.current_contract_address(), &fees);
+    //    let vault_contract_id = lp.contract_id().unwrap(); // safe since we require lp to be a contract upon initialization
+    vault::Client::new(e, &lp).deposit_fees(&e.current_contract_address(), &fees);
 
     Ok(())
 }

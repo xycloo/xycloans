@@ -19,7 +19,7 @@ pub trait VaultContractTrait {
     fn initialize(
         e: Env,
         admin: Address,
-        token_id: BytesN<32>,
+        token_id: Address,
         flash_loan: Address,
         flash_loan_bytes: BytesN<32>,
     ) -> Result<(), Error>;
@@ -49,7 +49,7 @@ impl VaultContractTrait for VaultContract {
     fn initialize(
         e: Env,
         admin: Address,
-        token_id: BytesN<32>,
+        token_id: Address,
         flash_loan: Address,
         flash_loan_bytes: BytesN<32>,
     ) -> Result<(), Error> {
@@ -59,7 +59,7 @@ impl VaultContractTrait for VaultContract {
 
         write_administrator(&e, admin);
         put_flash_loan(&e, flash_loan);
-        put_flash_loan_bytes(&e, flash_loan_bytes);
+        //        put_flash_loan_bytes(&e, flash_loan_bytes);
         put_token_id(&e, token_id);
 
         Ok(())
@@ -156,8 +156,9 @@ impl VaultContractTrait for VaultContract {
         //        pay_matured(&e, addr.clone());
 
         // pay out the corresponding deposit
-        let flash_loan_id_bytes = get_flash_loan_bytes(&e);
-        let flash_loan_client = flash_loan::Client::new(&e, &flash_loan_id_bytes);
+        //        let flash_loan_id_bytes = get_flash_loan_bytes(&e);
+        let flash_loan = get_flash_loan(&e);
+        let flash_loan_client = flash_loan::Client::new(&e, &flash_loan);
         flash_loan_client.withdraw(&e.current_contract_address(), &addr_deposit, &addr);
 
         // burn the shares
