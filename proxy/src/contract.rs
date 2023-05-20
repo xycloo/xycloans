@@ -14,15 +14,15 @@ pub trait AdminTrait {
     fn set_vault(
         env: Env,
         admin: Address,
-        token_contract_id: BytesN<32>,
-        vault_contract_id: BytesN<32>,
+        token_contract_id: Address,
+        vault_contract_id: Address,
     ) -> Result<(), Error>;
 
     fn set_flash_loan(
         env: Env,
         admin: Address,
-        token_contract_id: BytesN<32>,
-        flash_loan_contract_id: BytesN<32>,
+        token_contract_id: Address,
+        flash_loan_contract_id: Address,
     ) -> Result<(), Error>;
 }
 
@@ -31,26 +31,19 @@ pub trait LPTrait {
     fn deposit(
         env: Env,
         lender: Address,
-        token_contract_id: BytesN<32>,
+        token_contract_id: Address,
         amount: i128,
     ) -> Result<(), Error>;
 
-    fn update_rewards(
-        env: Env,
-        lender: Address,
-        token_contract_id: BytesN<32>,
-    ) -> Result<(), Error>;
+    fn update_rewards(env: Env, lender: Address, token_contract_id: Address) -> Result<(), Error>;
 
-    fn withdraw_matured(
-        env: Env,
-        lender: Address,
-        token_contract_id: BytesN<32>,
-    ) -> Result<(), Error>;
+    fn withdraw_matured(env: Env, lender: Address, token_contract_id: Address)
+        -> Result<(), Error>;
 
     fn withdraw_liquidity(
         env: Env,
         lender: Address,
-        token_contract_id: BytesN<32>,
+        token_contract_id: Address,
         shares: i128,
     ) -> Result<(), Error>;
 }
@@ -59,7 +52,7 @@ pub trait BorrowTrait {
     /// Borrow an `amount` of a token through a flash loan
     fn borrow(
         env: Env,
-        token_contract_id: BytesN<32>,
+        token_contract_id: Address,
         amount: i128,
         receiver_address: Address,
     ) -> Result<(), Error>;
@@ -79,8 +72,8 @@ impl AdminTrait for ProxyCommon {
     fn set_vault(
         env: Env,
         admin: Address,
-        token_contract_id: BytesN<32>,
-        vault_contract_id: BytesN<32>,
+        token_contract_id: Address,
+        vault_contract_id: Address,
     ) -> Result<(), Error> {
         check_admin(&env, &admin)?;
         admin.require_auth();
@@ -91,8 +84,8 @@ impl AdminTrait for ProxyCommon {
     fn set_flash_loan(
         env: Env,
         admin: Address,
-        token_contract_id: BytesN<32>,
-        flash_loan_contract_id: BytesN<32>,
+        token_contract_id: Address,
+        flash_loan_contract_id: Address,
     ) -> Result<(), Error> {
         check_admin(&env, &admin)?;
         admin.require_auth();
@@ -106,7 +99,7 @@ impl LPTrait for ProxyLP {
     fn deposit(
         env: Env,
         lender: Address,
-        token_contract_id: BytesN<32>,
+        token_contract_id: Address,
         amount: i128,
     ) -> Result<(), Error> {
         lender.require_auth();
@@ -118,11 +111,7 @@ impl LPTrait for ProxyLP {
         Ok(())
     }
 
-    fn update_rewards(
-        env: Env,
-        lender: Address,
-        token_contract_id: BytesN<32>,
-    ) -> Result<(), Error> {
+    fn update_rewards(env: Env, lender: Address, token_contract_id: Address) -> Result<(), Error> {
         let vault = get_vault(&env, token_contract_id)?;
         let vault_client = Client::new(&env, &vault);
 
@@ -133,7 +122,7 @@ impl LPTrait for ProxyLP {
     fn withdraw_matured(
         env: Env,
         lender: Address,
-        token_contract_id: BytesN<32>,
+        token_contract_id: Address,
     ) -> Result<(), Error> {
         //        lender.require_auth(); // auth isn't required here as we require it in the vault directly
         vault_withdraw_matured_fees(&env, lender, token_contract_id)?;
@@ -144,7 +133,7 @@ impl LPTrait for ProxyLP {
     fn withdraw_liquidity(
         env: Env,
         lender: Address,
-        token_contract_id: BytesN<32>,
+        token_contract_id: Address,
         shares: i128,
     ) -> Result<(), Error> {
         //        lender.require_auth(); // auth isn't required here as we require it in the vault directly
@@ -161,7 +150,7 @@ impl LPTrait for ProxyLP {
 impl BorrowTrait for ProxyBorrow {
     fn borrow(
         env: Env,
-        token_contract_id: BytesN<32>,
+        token_contract_id: Address,
         amount: i128,
         receiver_address: Address,
     ) -> Result<(), Error> {

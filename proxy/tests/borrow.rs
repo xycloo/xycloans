@@ -1,10 +1,5 @@
 use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
-use soroban_sdk::{vec, IntoVal, RawVal, Symbol};
-
-mod token {
-    use soroban_sdk::contractimport;
-    contractimport!(file = "../soroban_token_spec.wasm");
-}
+use soroban_sdk::{token, vec, IntoVal, RawVal, Symbol};
 
 mod loan_ctr {
     use soroban_sdk::contractimport;
@@ -40,6 +35,8 @@ mod receiver_ctr {
 #[test]
 fn successful_borrow() {
     let e: Env = Default::default();
+    e.mock_all_auths();
+
     let token_admin = Address::random(&e);
     let protocol = Address::random(&e);
 
@@ -48,20 +45,14 @@ fn successful_borrow() {
     let token_id = e.register_stellar_asset_contract(token_admin.clone());
     let usdc_token = token::Client::new(&e, &token_id);
 
-    let proxy_contract_id =
-        e.register_contract_wasm(&BytesN::from_array(&e, &[1; 32]), proxy::WASM);
-    let proxy_client = proxy::Client::new(&e, &proxy_contract_id);
-    let proxy_id = Address::from_contract_id(&e, &proxy_contract_id);
+    let proxy_id = e.register_contract_wasm(&None, proxy::WASM);
+    let proxy_client = proxy::Client::new(&e, &proxy_id);
 
-    let vault_contract_id =
-        e.register_contract_wasm(&BytesN::from_array(&e, &[8; 32]), vault::WASM);
-    let vault_client = vault::Client::new(&e, &vault_contract_id);
-    let vault_id = Address::from_contract_id(&e, &vault_contract_id);
+    let vault_id = e.register_contract_wasm(&None, vault::WASM);
+    let vault_client = vault::Client::new(&e, &vault_id);
 
-    let flash_loan_contract_id =
-        e.register_contract_wasm(&BytesN::from_array(&e, &[5; 32]), loan_ctr::WASM);
-    let flash_loan_client = loan_ctr::Client::new(&e, &flash_loan_contract_id);
-    let flash_loan_id = Address::from_contract_id(&e, &flash_loan_contract_id);
+    let flash_loan_id = e.register_contract_wasm(&None, loan_ctr::WASM);
+    let flash_loan_client = loan_ctr::Client::new(&e, &flash_loan_id);
 
     proxy_client.initialize(&protocol);
 
@@ -70,11 +61,11 @@ fn successful_borrow() {
         &proxy_id,
         &token_id,
         &flash_loan_id,
-        &flash_loan_contract_id,
+        &BytesN::from_array(&e, &[0; 32]),
     );
 
-    proxy_client.set_vault(&protocol, &token_id, &vault_contract_id);
-    proxy_client.set_flash_loan(&protocol, &token_id, &flash_loan_contract_id);
+    proxy_client.set_vault(&protocol, &token_id, &vault_id);
+    proxy_client.set_flash_loan(&protocol, &token_id, &flash_loan_id);
 
     usdc_token.mint(&lp, &1000000);
     proxy_client.deposit(&lp, &token_id, &1000000);
@@ -88,19 +79,17 @@ fn successful_borrow() {
     receiver_client.init(&token_id, &flash_loan_id, &100000);
 
     // These `100 $USDC` below are the profits the receiver contract would make. We simply mint the contract some tokens without performing any cdp or arbitrage trading action since it's beyond the scope of the quickstart.
-    usdc_token.mint(&Address::from_contract_id(&e, &receiver_contract), &100);
+    usdc_token.mint(&receiver_contract, &100);
 
-    proxy_client.borrow(
-        &token_id,
-        &100000,
-        &Address::from_contract_id(&e, &receiver_contract),
-    );
+    proxy_client.borrow(&token_id, &100000, &receiver_contract);
 }
 
 #[test]
 #[should_panic(expected = "Status(ContractError(4))")]
 fn unsuccessful_borrow() {
     let e: Env = Default::default();
+    e.mock_all_auths();
+
     let token_admin = Address::random(&e);
     let protocol = Address::random(&e);
 
@@ -109,20 +98,14 @@ fn unsuccessful_borrow() {
     let token_id = e.register_stellar_asset_contract(token_admin.clone());
     let usdc_token = token::Client::new(&e, &token_id);
 
-    let proxy_contract_id =
-        e.register_contract_wasm(&BytesN::from_array(&e, &[1; 32]), proxy::WASM);
-    let proxy_client = proxy::Client::new(&e, &proxy_contract_id);
-    let proxy_id = Address::from_contract_id(&e, &proxy_contract_id);
+    let proxy_id = e.register_contract_wasm(&None, proxy::WASM);
+    let proxy_client = proxy::Client::new(&e, &proxy_id);
 
-    let vault_contract_id =
-        e.register_contract_wasm(&BytesN::from_array(&e, &[8; 32]), vault::WASM);
-    let vault_client = vault::Client::new(&e, &vault_contract_id);
-    let vault_id = Address::from_contract_id(&e, &vault_contract_id);
+    let vault_id = e.register_contract_wasm(&None, vault::WASM);
+    let vault_client = vault::Client::new(&e, &vault_id);
 
-    let flash_loan_contract_id =
-        e.register_contract_wasm(&BytesN::from_array(&e, &[5; 32]), loan_ctr::WASM);
-    let flash_loan_client = loan_ctr::Client::new(&e, &flash_loan_contract_id);
-    let flash_loan_id = Address::from_contract_id(&e, &flash_loan_contract_id);
+    let flash_loan_id = e.register_contract_wasm(&None, loan_ctr::WASM);
+    let flash_loan_client = loan_ctr::Client::new(&e, &flash_loan_id);
 
     proxy_client.initialize(&protocol);
 
@@ -131,11 +114,11 @@ fn unsuccessful_borrow() {
         &proxy_id,
         &token_id,
         &flash_loan_id,
-        &flash_loan_contract_id,
+        &BytesN::from_array(&e, &[0; 32]),
     );
 
-    proxy_client.set_vault(&protocol, &token_id, &vault_contract_id);
-    proxy_client.set_flash_loan(&protocol, &token_id, &flash_loan_contract_id);
+    proxy_client.set_vault(&protocol, &token_id, &vault_id);
+    proxy_client.set_flash_loan(&protocol, &token_id, &flash_loan_id);
 
     usdc_token.mint(&lp, &1000000);
     proxy_client.deposit(&lp, &token_id, &1000000);
@@ -148,9 +131,5 @@ fn unsuccessful_borrow() {
 
     receiver_client.init(&token_id, &flash_loan_id, &100000);
 
-    proxy_client.borrow(
-        &token_id,
-        &100000,
-        &Address::from_contract_id(&e, &receiver_contract),
-    );
+    proxy_client.borrow(&token_id, &100000, &receiver_contract);
 }
