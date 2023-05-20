@@ -1,9 +1,3 @@
-mod token {
-    use soroban_sdk::contractimport;
-
-    contractimport!(file = "../soroban_token_spec.wasm");
-}
-
 mod vault {
     use soroban_sdk::contractimport;
 
@@ -16,11 +10,13 @@ mod loan_ctr {
     contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_flash_loan.wasm");
 }
 
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
+use soroban_sdk::{testutils::Address as _, token, Address, BytesN, Env};
 
 #[test]
 fn deposit() {
     let e: Env = Default::default();
+    e.mock_all_auths();
+
     let admin1 = Address::random(&e);
 
     let user1 = Address::random(&e);
@@ -30,18 +26,19 @@ fn deposit() {
     let token_id = e.register_stellar_asset_contract(admin1);
     let token = token::Client::new(&e, &token_id);
 
-    let vault_contract_id =
-        e.register_contract_wasm(&BytesN::from_array(&e, &[5; 32]), vault::WASM);
-    let vault_client = vault::Client::new(&e, &vault_contract_id);
-    let vault_id = Address::from_contract_id(&e, &vault_contract_id);
+    let vault_id = e.register_contract_wasm(&None, vault::WASM); // 5;32
+    let vault_client = vault::Client::new(&e, &vault_id);
 
-    let flash_loan_contract_id =
-        e.register_contract_wasm(&BytesN::from_array(&e, &[8; 32]), loan_ctr::WASM);
-    let flash_loan_id = Address::from_contract_id(&e, &flash_loan_contract_id);
-    let flash_loan_client = loan_ctr::Client::new(&e, &flash_loan_contract_id);
+    let flash_loan_id = e.register_contract_wasm(&None, loan_ctr::WASM);
+    let flash_loan_client = loan_ctr::Client::new(&e, &flash_loan_id);
 
     flash_loan_client.init(&token_id, &vault_id);
-    vault_client.initialize(&user1, &token_id, &flash_loan_id, &flash_loan_contract_id);
+    vault_client.initialize(
+        &user1,
+        &token_id,
+        &flash_loan_id,
+        &BytesN::from_array(&e, &[0; 32]),
+    );
 
     token.mint(&user1, &1000000000);
     token.mint(&user2, &500000000);
