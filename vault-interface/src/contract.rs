@@ -11,9 +11,8 @@ pub trait VaultContractTrait {
     fn initialize(
         e: Env,
         admin: Address,
-        token_id: BytesN<32>,
+        token_id: Address,
         flash_loan: Address,
-        flash_loan_bytes: BytesN<32>,
     ) -> Result<(), Error>;
 
     /// Deposits liquidity into the flash loan and mints shares

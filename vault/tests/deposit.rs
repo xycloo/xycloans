@@ -33,12 +33,7 @@ fn deposit() {
     let flash_loan_client = loan_ctr::Client::new(&e, &flash_loan_id);
 
     flash_loan_client.init(&token_id, &vault_id);
-    vault_client.initialize(
-        &user1,
-        &token_id,
-        &flash_loan_id,
-        &BytesN::from_array(&e, &[0; 32]),
-    );
+    vault_client.initialize(&user1, &token_id, &flash_loan_id);
 
     token.mint(&user1, &1000000000);
     token.mint(&user2, &500000000);

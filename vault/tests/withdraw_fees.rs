@@ -34,12 +34,7 @@ fn fee_withdraw_multiple_users() {
     //    let flash_loan_client = loan_ctr::Client::new(&e, &flash_loan_contract_id);
 
     //    flash_loan_client.init(&token_id, &vault_id);
-    vault_client.initialize(
-        &user1,
-        &token_id,
-        &flash_loan_id,
-        &BytesN::from_array(&e, &[0; 32]),
-    ); // user1 is the vault's admin
+    vault_client.initialize(&user1, &token_id, &flash_loan_id); // user1 is the vault's admin
 
     token.mint(&user1, &(50 * STROOP as i128));
     token.mint(&user2, &(100 * STROOP as i128));

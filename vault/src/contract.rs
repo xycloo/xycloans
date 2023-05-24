@@ -21,7 +21,6 @@ pub trait VaultContractTrait {
         admin: Address,
         token_id: Address,
         flash_loan: Address,
-        flash_loan_bytes: BytesN<32>,
     ) -> Result<(), Error>;
 
     /// Deposits liquidity into the flash loan and mints shares
@@ -51,7 +50,6 @@ impl VaultContractTrait for VaultContract {
         admin: Address,
         token_id: Address,
         flash_loan: Address,
-        flash_loan_bytes: BytesN<32>,
     ) -> Result<(), Error> {
         if has_administrator(&e) {
             return Err(Error::VaultAlreadyInitialized);
@@ -59,7 +57,6 @@ impl VaultContractTrait for VaultContract {
 
         write_administrator(&e, admin);
         put_flash_loan(&e, flash_loan);
-        //        put_flash_loan_bytes(&e, flash_loan_bytes);
         put_token_id(&e, token_id);
 
         Ok(())
