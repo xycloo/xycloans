@@ -40,9 +40,8 @@ impl VaultContractTrait for VaultContract {
     fn initialize(
         e: Env,
         admin: Address,
-        token_id: BytesN<32>,
+        token_id: Address,
         flash_loan: Address,
-        flash_loan_bytes: BytesN<32>,
     ) -> Result<(), Error> {
         Ok(())
     }
