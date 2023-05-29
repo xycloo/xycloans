@@ -58,12 +58,7 @@ fn proxy_admin_auth() {
     proxy_client.initialize(&protocol);
 
     flash_loan_client.init(&token_id, &vault_id);
-    vault_client.initialize(
-        &proxy_id,
-        &token_id,
-        &flash_loan_id,
-        &BytesN::from_array(&e, &[0; 32]),
-    );
+    vault_client.initialize(&proxy_id, &token_id, &flash_loan_id);
 
     proxy_client.set_vault(&protocol, &token_id, &vault_id);
     let expected_auth: Vec<(Address, Address, Symbol, soroban_sdk::Vec<RawVal>)> = std::vec![(
@@ -121,12 +116,7 @@ fn proxy_invalid_admin_auth() {
     proxy_client.initialize(&protocol);
 
     flash_loan_client.init(&token_id, &vault_id);
-    vault_client.initialize(
-        &proxy_id,
-        &token_id,
-        &flash_loan_id,
-        &BytesN::from_array(&e, &[0; 32]),
-    );
+    vault_client.initialize(&proxy_id, &token_id, &flash_loan_id);
 
     let _set_vault_res = proxy_client.try_set_vault(&not_protocol, &token_id, &vault_id);
     assert_eq!(e.auths(), []);

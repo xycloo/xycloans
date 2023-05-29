@@ -58,12 +58,7 @@ fn successful_borrow() {
     increment_client.init(&user1, &token_id);
 
     flash_loan_client.init(&token_id, &vault_id);
-    vault_client.initialize(
-        &user1,
-        &token_id,
-        &flash_loan_id,
-        &BytesN::from_array(&e, &[0; 32]),
-    );
+    vault_client.initialize(&user1, &token_id, &flash_loan_id);
 
     vault_client.deposit(&user1, &user1, &(100 * 10000000));
 
@@ -112,12 +107,7 @@ fn unsuccessful_borrow() {
     increment_client.init(&user1, &token_id);
 
     flash_loan_client.init(&token_id, &vault_id);
-    vault_client.initialize(
-        &user1,
-        &token_id,
-        &flash_loan_id,
-        &BytesN::from_array(&e, &[0; 32]),
-    );
+    vault_client.initialize(&user1, &token_id, &flash_loan_id);
 
     vault_client.deposit(&user1, &user1, &(100 * 10000000));
 
