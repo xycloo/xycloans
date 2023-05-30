@@ -3,13 +3,7 @@
 use crate::flash_loan_receiver_standard::FlashLoanReceiverClient;
 use crate::flash_loan_receiver_standard_unsuccessful::FlashLoanReceiverClient as FlashLoanReceiverUnsuccessfulClient;
 use fixed_point_math::STROOP;
-use soroban_sdk::{contractimpl, testutils::Address as _, Address, BytesN, Env, Symbol};
-
-mod token {
-    use soroban_sdk::contractimport;
-
-    contractimport!(file = "../soroban_token_spec.wasm");
-}
+use soroban_sdk::{contractimpl, testutils::Address as _, token, Address, BytesN, Env, Symbol};
 
 mod vault {
     use soroban_sdk::contractimport;
@@ -34,6 +28,8 @@ mod receiver_interface {
 #[test]
 fn successful_borrow() {
     let e: Env = Default::default();
+    e.mock_all_auths();
+
     let admin1 = Address::random(&e);
 
     let user1 = Address::random(&e);
@@ -42,39 +38,33 @@ fn successful_borrow() {
     let token_id = e.register_stellar_asset_contract(admin1);
     let token = token::Client::new(&e, &token_id);
 
-    let vault_contract_id =
-        e.register_contract_wasm(&BytesN::from_array(&e, &[5; 32]), vault::WASM);
-    let vault_client = vault::Client::new(&e, &vault_contract_id);
-    let vault_id = Address::from_contract_id(&e, &vault_contract_id);
+    let vault_id = e.register_contract_wasm(&None, vault::WASM);
+    let vault_client = vault::Client::new(&e, &vault_id);
 
-    let flash_loan_contract_id =
-        e.register_contract_wasm(&BytesN::from_array(&e, &[23; 32]), loan_ctr::WASM);
-    let flash_loan_client = loan_ctr::Client::new(&e, &flash_loan_contract_id);
-    let flash_loan_id = Address::from_contract_id(&e, &flash_loan_contract_id);
+    let flash_loan_id = e.register_contract_wasm(&None, loan_ctr::WASM);
+    let flash_loan_client = loan_ctr::Client::new(&e, &flash_loan_id);
 
-    let increment_contract = e.register_contract(&BytesN::from_array(&e, &[2; 32]), BalIncrement);
-    let increment_contract_id = Address::from_contract_id(&e, &increment_contract);
-    let increment_client = BalIncrementClient::new(&e, &increment_contract);
+    let increment_id = e.register_contract(&None, BalIncrement);
+    let increment_client = BalIncrementClient::new(&e, &increment_id);
 
-    let receiver_contract =
+    let receiver_id =
         e.register_contract(None, crate::flash_loan_receiver_standard::FlashLoanReceiver);
-    let receiver_contract_id = Address::from_contract_id(&e, &receiver_contract);
-    let receiver_client = FlashLoanReceiverClient::new(&e, &receiver_contract);
+    let receiver_client = FlashLoanReceiverClient::new(&e, &receiver_id);
 
-    token.mint(&increment_contract_id, &1000000000);
+    token.mint(&increment_id, &1000000000);
     token.mint(&user1, &(100 * 10000000));
 
-    receiver_client.init(&user1, &token_id);
+    receiver_client.init(&user1, &token_id, &increment_id, &flash_loan_id);
     increment_client.init(&user1, &token_id);
 
     flash_loan_client.init(&token_id, &vault_id);
-    vault_client.initialize(&user1, &token_id, &flash_loan_id, &flash_loan_contract_id);
+    vault_client.initialize(&user1, &token_id, &flash_loan_id);
 
     vault_client.deposit(&user1, &user1, &(100 * 10000000));
 
-    flash_loan_client.borrow(&receiver_contract_id, &(100 * 10000000));
+    flash_loan_client.borrow(&receiver_id, &(100 * 10000000));
 
-    assert_eq!(token.balance(&receiver_contract_id), 9500000);
+    assert_eq!(token.balance(&receiver_id), 9500000);
     assert_eq!(token.balance(&flash_loan_id), 100 * 10000000);
 }
 
@@ -82,6 +72,8 @@ fn successful_borrow() {
 #[should_panic(expected = "Status(ContractError(4))")]
 fn unsuccessful_borrow() {
     let e: Env = Default::default();
+    e.mock_all_auths();
+
     let admin1 = Address::random(&e);
 
     let user1 = Address::random(&e);
@@ -90,35 +82,32 @@ fn unsuccessful_borrow() {
     let token_id = e.register_stellar_asset_contract(admin1);
     let token = token::Client::new(&e, &token_id);
 
-    let vault_contract_id =
-        e.register_contract_wasm(&BytesN::from_array(&e, &[5; 32]), vault::WASM);
-    let vault_client = vault::Client::new(&e, &vault_contract_id);
-    let vault_id = Address::from_contract_id(&e, &vault_contract_id);
+    let vault_id = e.register_contract_wasm(&None, vault::WASM);
+    let vault_client = vault::Client::new(&e, &vault_id);
+    //    let vault_id = Address::from_contract_id(&e, &vault_contract_id);
 
-    let flash_loan_contract_id =
-        e.register_contract_wasm(&BytesN::from_array(&e, &[23; 32]), loan_ctr::WASM);
-    let flash_loan_client = loan_ctr::Client::new(&e, &flash_loan_contract_id);
-    let flash_loan_id = Address::from_contract_id(&e, &flash_loan_contract_id);
+    let flash_loan_id = e.register_contract_wasm(&None, loan_ctr::WASM);
+    let flash_loan_client = loan_ctr::Client::new(&e, &flash_loan_id);
+    //    let flash_loan_id = Address::from_contract_id(&e, &flash_loan_contract_id);
 
-    let increment_contract = e.register_contract(&BytesN::from_array(&e, &[2; 32]), BalIncrement);
-    let increment_contract_id = Address::from_contract_id(&e, &increment_contract);
-    let increment_client = BalIncrementClient::new(&e, &increment_contract);
+    let increment_contract_id = e.register_contract(&None, BalIncrement);
+    //    let increment_contract_id = Address::from_contract_id(&e, &increment_contract);
+    let increment_client = BalIncrementClient::new(&e, &increment_contract_id);
 
-    let receiver_contract = e.register_contract(
+    let receiver_contract_id = e.register_contract(
         None,
         crate::flash_loan_receiver_standard_unsuccessful::FlashLoanReceiver,
     );
-    let receiver_contract_id = Address::from_contract_id(&e, &receiver_contract);
-    let receiver_client = FlashLoanReceiverUnsuccessfulClient::new(&e, &receiver_contract);
+    let receiver_client = FlashLoanReceiverUnsuccessfulClient::new(&e, &receiver_contract_id);
 
     token.mint(&increment_contract_id, &1000000000);
     token.mint(&user1, &(100 * 10000000));
 
-    receiver_client.init(&user1, &token_id);
+    receiver_client.init(&user1, &token_id, &increment_contract_id, &flash_loan_id);
     increment_client.init(&user1, &token_id);
 
     flash_loan_client.init(&token_id, &vault_id);
-    vault_client.initialize(&user1, &token_id, &flash_loan_id, &flash_loan_contract_id);
+    vault_client.initialize(&user1, &token_id, &flash_loan_id);
 
     vault_client.deposit(&user1, &user1, &(100 * 10000000));
 
@@ -139,24 +128,35 @@ mod flash_loan_receiver_standard {
 
     #[contractimpl]
     impl FlashLoanReceiver {
-        pub fn init(e: Env, admin: Address, token: BytesN<32>) {
+        pub fn init(e: Env, admin: Address, token: Address, bal_addr: Address, fl_addr: Address) {
             admin.require_auth();
             e.storage().set(&Symbol::short("T"), &token);
+            e.storage().set(&Symbol::short("BAL"), &bal_addr);
+            e.storage().set(&Symbol::short("FL"), &fl_addr);
         }
 
         pub fn exec_op(e: Env) -> Result<(), receiver_interface::ReceiverError> {
             let token_client = token::Client::new(
                 &e,
                 &e.storage()
-                    .get::<Symbol, BytesN<32>>(&Symbol::short("T"))
+                    .get::<Symbol, Address>(&Symbol::short("T"))
                     .unwrap()
                     .unwrap(),
             );
-            let client = BalIncrementClient::new(&e, &BytesN::from_array(&e, &[2; 32]));
+            let client = BalIncrementClient::new(
+                &e,
+                &e.storage()
+                    .get::<Symbol, Address>(&Symbol::short("BAL"))
+                    .unwrap()
+                    .unwrap(),
+            );
 
             token_client.transfer(
                 &e.current_contract_address(),
-                &Address::from_contract_id(&e, &BytesN::from_array(&e, &[2; 32])),
+                &e.storage()
+                    .get::<Symbol, Address>(&Symbol::short("BAL"))
+                    .unwrap()
+                    .unwrap(),
                 &(100 * STROOP as i128),
             );
             client.increment(&e.current_contract_address(), &(100 * STROOP as i128));
@@ -165,7 +165,10 @@ mod flash_loan_receiver_standard {
 
             token_client.increase_allowance(
                 &e.current_contract_address(),
-                &Address::from_contract_id(&e, &BytesN::from_array(&e, &[23; 32])),
+                &e.storage()
+                    .get::<Symbol, Address>(&Symbol::short("FL"))
+                    .unwrap()
+                    .unwrap(),
                 &total_amount,
             );
 
@@ -178,7 +181,7 @@ pub struct BalIncrement;
 
 #[contractimpl]
 impl BalIncrement {
-    pub fn init(e: Env, admin: Address, token: BytesN<32>) {
+    pub fn init(e: Env, admin: Address, token: Address) {
         admin.require_auth();
         e.storage().set(&Symbol::short("T"), &token);
     }
@@ -187,7 +190,7 @@ impl BalIncrement {
         let token_client = token::Client::new(
             &e,
             &e.storage()
-                .get::<Symbol, BytesN<32>>(&Symbol::short("T"))
+                .get::<Symbol, Address>(&Symbol::short("T"))
                 .unwrap()
                 .unwrap(),
         );
@@ -203,7 +206,7 @@ impl BalIncrement {
         let token_client = token::Client::new(
             &e,
             &e.storage()
-                .get::<Symbol, BytesN<32>>(&Symbol::short("T"))
+                .get::<Symbol, Address>(&Symbol::short("T"))
                 .unwrap()
                 .unwrap(),
         );
@@ -228,16 +231,18 @@ mod flash_loan_receiver_standard_unsuccessful {
 
     #[contractimpl]
     impl FlashLoanReceiver {
-        pub fn init(e: Env, admin: Address, token: BytesN<32>) {
+        pub fn init(e: Env, admin: Address, token: Address, bal_addr: Address, fl_addr: Address) {
             admin.require_auth();
             e.storage().set(&Symbol::short("T"), &token);
+            e.storage().set(&Symbol::short("BAL"), &bal_addr);
+            e.storage().set(&Symbol::short("FL"), &fl_addr);
         }
 
         pub fn exec_op(e: Env) -> Result<(), receiver_interface::ReceiverError> {
             let token_client = token::Client::new(
                 &e,
                 &e.storage()
-                    .get::<Symbol, BytesN<32>>(&Symbol::short("T"))
+                    .get::<Symbol, Address>(&Symbol::short("T"))
                     .unwrap()
                     .unwrap(),
             );
@@ -245,7 +250,10 @@ mod flash_loan_receiver_standard_unsuccessful {
             let total_amount = 100000 + compute_fee(&100000);
             token_client.increase_allowance(
                 &e.current_contract_address(),
-                &Address::from_contract_id(&e, &BytesN::from_array(&e, &[5; 32])),
+                &e.storage()
+                    .get::<Symbol, Address>(&Symbol::short("FL"))
+                    .unwrap()
+                    .unwrap(),
                 &total_amount,
             );
 

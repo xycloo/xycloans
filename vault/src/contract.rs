@@ -19,9 +19,8 @@ pub trait VaultContractTrait {
     fn initialize(
         e: Env,
         admin: Address,
-        token_id: BytesN<32>,
+        token_id: Address,
         flash_loan: Address,
-        flash_loan_bytes: BytesN<32>,
     ) -> Result<(), Error>;
 
     /// Deposits liquidity into the flash loan and mints shares
@@ -49,9 +48,8 @@ impl VaultContractTrait for VaultContract {
     fn initialize(
         e: Env,
         admin: Address,
-        token_id: BytesN<32>,
+        token_id: Address,
         flash_loan: Address,
-        flash_loan_bytes: BytesN<32>,
     ) -> Result<(), Error> {
         if has_administrator(&e) {
             return Err(Error::VaultAlreadyInitialized);
@@ -59,7 +57,6 @@ impl VaultContractTrait for VaultContract {
 
         write_administrator(&e, admin);
         put_flash_loan(&e, flash_loan);
-        put_flash_loan_bytes(&e, flash_loan_bytes);
         put_token_id(&e, token_id);
 
         Ok(())
@@ -72,10 +69,6 @@ impl VaultContractTrait for VaultContract {
         if flash_loan != flash_loan_stored {
             return Err(Error::InvalidAdminAuth);
         }
-
-        // transfer the fees in the vault from the flash loan contract
-        let client = get_token_client(&e);
-        client.transfer(&flash_loan, &e.current_contract_address(), &amount);
 
         // update the universal fee per share amount here to avoid the need for a collected_last_recorded storage slot.
         update_fee_per_share_universal(&e, amount);
@@ -95,18 +88,16 @@ impl VaultContractTrait for VaultContract {
 
         // calculate the number of shares to mint
         let total_supply = get_tot_supply(&e);
+        let total_deposited = read_total_deposited(&e);
         let shares = if 0 == total_supply {
             amount
         } else {
-            compute_shares_amount(
-                amount,
-                total_supply,
-                read_flash_loan_balance(&e, &token_client), // shares are calculated for the liquidity, since fees aren't re-invested as liquidity we only count the flash loan contract's balance.
-            )
+            compute_shares_amount(amount, total_supply, total_deposited)
         };
 
         // transfer the funds into the flash loan
         transfer_into_flash_loan(&e, &token_client, &from, &amount);
+        write_total_deposited(&e, amount);
 
         // mint the new shares to the lender
         mint_shares(&e, from, shares);
@@ -128,18 +119,12 @@ impl VaultContractTrait for VaultContract {
     }
 
     fn update_fee_rewards(e: Env, addr: Address) -> Result<(), Error> {
-        // authenticate the admin and check authorization
-        //        auth_admin(&e, admin)?; // auth here shouldn't be required since it locks user capital under the proxy
-
         update_rewards(&e, addr);
 
         Ok(())
     }
 
     fn withdraw(e: Env, addr: Address, amount: i128) -> Result<(), Error> {
-        // authenticate the admin and check authorization
-        //        auth_admin(&e, admin)?; // auth here shouldn't be required since it locks user capital under the proxy
-
         // require lender auth for withdrawal
         addr.require_auth();
 
@@ -168,8 +153,9 @@ impl VaultContractTrait for VaultContract {
         //        pay_matured(&e, addr.clone());
 
         // pay out the corresponding deposit
-        let flash_loan_id_bytes = get_flash_loan_bytes(&e);
-        let flash_loan_client = flash_loan::Client::new(&e, &flash_loan_id_bytes);
+        //        let flash_loan_id_bytes = get_flash_loan_bytes(&e);
+        let flash_loan = get_flash_loan(&e);
+        let flash_loan_client = flash_loan::Client::new(&e, &flash_loan);
         flash_loan_client.withdraw(&e.current_contract_address(), &addr_deposit, &addr);
 
         // burn the shares

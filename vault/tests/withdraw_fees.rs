@@ -1,9 +1,3 @@
-mod token {
-    use soroban_sdk::contractimport;
-
-    contractimport!(file = "../soroban_token_spec.wasm");
-}
-
 use fixed_point_math::STROOP;
 
 mod vault {
@@ -18,11 +12,13 @@ mod loan_ctr {
     contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_flash_loan.wasm");
 }
 
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
+use soroban_sdk::{testutils::Address as _, token, Address, BytesN, Env};
 
 #[test]
 fn fee_withdraw_multiple_users() {
     let e: Env = Default::default();
+    e.mock_all_auths();
+
     let admin1 = Address::random(&e);
 
     let user1 = Address::random(&e);
@@ -31,18 +27,14 @@ fn fee_withdraw_multiple_users() {
     let token_id = e.register_stellar_asset_contract(admin1);
     let token = token::Client::new(&e, &token_id);
 
-    let vault_contract_id =
-        e.register_contract_wasm(&BytesN::from_array(&e, &[5; 32]), vault::WASM);
-    let vault_client = vault::Client::new(&e, &vault_contract_id);
-    let vault_id = Address::from_contract_id(&e, &vault_contract_id);
+    let vault_id = e.register_contract_wasm(&None, vault::WASM);
+    let vault_client = vault::Client::new(&e, &vault_id);
 
-    let flash_loan_contract_id =
-        e.register_contract_wasm(&BytesN::from_array(&e, &[8; 32]), loan_ctr::WASM);
-    let flash_loan_id = Address::random(&e);
+    let flash_loan_id = e.register_contract_wasm(&None, loan_ctr::WASM);
     //    let flash_loan_client = loan_ctr::Client::new(&e, &flash_loan_contract_id);
 
     //    flash_loan_client.init(&token_id, &vault_id);
-    vault_client.initialize(&user1, &token_id, &flash_loan_id, &flash_loan_contract_id); // user1 is the vault's admin
+    vault_client.initialize(&user1, &token_id, &flash_loan_id); // user1 is the vault's admin
 
     token.mint(&user1, &(50 * STROOP as i128));
     token.mint(&user2, &(100 * STROOP as i128));
@@ -52,7 +44,7 @@ fn fee_withdraw_multiple_users() {
     vault_client.deposit(&user1, &user2, &(100 * STROOP as i128));
 
     // flash loan generates yield and deposits it into the vault
-    token.mint(&flash_loan_id, &(10 * STROOP as i128));
+    token.mint(&vault_id, &(10 * STROOP as i128));
     vault_client.deposit_fees(&flash_loan_id, &(10 * STROOP as i128));
 
     vault_client.update_fee_rewards(&user1);
@@ -64,7 +56,7 @@ fn fee_withdraw_multiple_users() {
     assert_eq!(token.balance(&user2), 66666600);
 
     // flash loan generates yield and deposits it into the vault
-    token.mint(&flash_loan_id, &(10 * STROOP as i128));
+    token.mint(&vault_id, &(10 * STROOP as i128));
     vault_client.deposit_fees(&flash_loan_id, &(10 * STROOP as i128));
 
     assert_eq!(token.balance(&user1), 33333300);

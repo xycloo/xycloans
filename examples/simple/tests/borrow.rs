@@ -1,12 +1,6 @@
 #![cfg(test)]
 //use soroban_auth::{Address, Signature};
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, IntoVal};
-
-mod token {
-    use soroban_sdk::contractimport;
-
-    contractimport!(file = "../../soroban_token_spec.wasm");
-}
+use soroban_sdk::{testutils::Address as _, token, Address, BytesN, Env, IntoVal};
 
 mod vault {
     use soroban_sdk::contractimport;
@@ -40,6 +34,8 @@ const STROOP: i128 = 10000000;
 #[test]
 fn test_successful_borrow() {
     let e: Env = Default::default();
+    e.mock_all_auths();
+
     let admin1 = Address::random(&e);
 
     let user1 = Address::random(&e);
@@ -48,15 +44,11 @@ fn test_successful_borrow() {
     let token_id = e.register_stellar_asset_contract(admin1);
     let token = token::Client::new(&e, &token_id);
 
-    let vault_contract_id =
-        e.register_contract_wasm(&BytesN::from_array(&e, &[5; 32]), vault::WASM);
-    let vault_client = vault::Client::new(&e, &vault_contract_id);
-    let vault_id = Address::from_contract_id(&e, &vault_contract_id);
+    let vault_id = e.register_contract_wasm(&None, vault::WASM);
+    let vault_client = vault::Client::new(&e, &vault_id);
 
-    let flash_loan_contract_id =
-        e.register_contract_wasm(&BytesN::from_array(&e, &[23; 32]), loan_ctr::WASM);
-    let flash_loan_client = loan_ctr::Client::new(&e, &flash_loan_contract_id);
-    let flash_loan_id = Address::from_contract_id(&e, &flash_loan_contract_id);
+    let flash_loan_id = e.register_contract_wasm(&None, loan_ctr::WASM);
+    let flash_loan_client = loan_ctr::Client::new(&e, &flash_loan_id);
 
     // Beginning of "developer invocations"
 
@@ -66,33 +58,21 @@ fn test_successful_borrow() {
     receiver_client.init(&token_id, &flash_loan_id, &(100 * STROOP));
 
     flash_loan_client.init(&token_id, &vault_id);
-    vault_client.initialize(&user1, &token_id, &flash_loan_id, &flash_loan_contract_id);
+    vault_client.initialize(&user1, &token_id, &flash_loan_id);
 
     token.mint(&user1, &(100 * STROOP));
     token.mint(&user2, &(100 * STROOP));
 
-    token.mint(
-        &Address::from_contract_id(&e, &receiver_contract),
-        &(STROOP),
-    );
+    token.mint(&receiver_contract, &(STROOP));
 
     vault_client.deposit(&user1, &user1, &(100 * STROOP));
 
     // Borrowing from the lender, this invocation will result in an invocation to your receiver contract (the one you wrote in `lib.rs`)
-    flash_loan_client.borrow(
-        &Address::from_contract_id(&e, &receiver_contract),
-        &(100 * STROOP),
-    );
+    flash_loan_client.borrow(&receiver_contract, &(100 * STROOP));
 
-    assert_eq!(
-        token.balance(&Address::from_contract_id(&e, &receiver_contract)),
-        9500000
-    );
+    assert_eq!(token.balance(&receiver_contract), 9500000);
 
-    assert_eq!(
-        token.balance(&Address::from_contract_id(&e, &flash_loan_contract_id)),
-        100 * STROOP
-    );
+    assert_eq!(token.balance(&flash_loan_id), 100 * STROOP);
 }
 
 /*

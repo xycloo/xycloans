@@ -1,11 +1,11 @@
-use soroban_sdk::{contracterror, contracttype, BytesN};
+use soroban_sdk::{contracterror, contracttype, Address, BytesN};
 
 #[derive(Clone)]
 #[contracttype]
 pub enum DataKey {
     Admin,
-    Vault(BytesN<32>),
-    FlashLoan(BytesN<32>),
+    Vault(Address),
+    FlashLoan(Address),
 }
 
 #[derive(Copy, Clone, Debug)]

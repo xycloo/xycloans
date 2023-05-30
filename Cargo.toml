@@ -4,8 +4,9 @@ members = [
     "flash-loan",
     "receiver-standard",
     "examples/simple",
-    "examples/gba-simple",
+#    "examples/gba-simple",
     "vault",
+    "vault-interface",
     "proxy",
 ]
 
@@ -25,9 +26,7 @@ lto = true
 
 
 [workspace.dependencies.soroban-sdk]
-git = "https://github.com/stellar/rs-soroban-sdk"
-rev = "29b505cf95f2fd4fbe639fdb163b606c44920837"
-version = "0.7.0"
+version = "0.8.4"
 
 
 [workspace.dependencies.fixed-point-math]

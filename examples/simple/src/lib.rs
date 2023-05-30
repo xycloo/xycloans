@@ -1,10 +1,6 @@
 #![no_std]
 use receiver_interface::{Contract, ReceiverError};
-use soroban_sdk::{contractimpl, Address, BytesN, Env, Symbol};
-
-mod token {
-    soroban_sdk::contractimport!(file = "../../soroban_token_spec.wasm");
-}
+use soroban_sdk::{contractimpl, token, Address, BytesN, Env, Symbol};
 
 mod receiver_interface {
     soroban_sdk::contractimport!(
@@ -26,7 +22,7 @@ impl receiver_interface::Contract for FlashLoanReceiverContract {
         let token_client = token::Client::new(
             &e,
             &e.storage()
-                .get::<Symbol, BytesN<32>>(&Symbol::short("T"))
+                .get::<Symbol, Address>(&Symbol::short("T"))
                 .unwrap()
                 .unwrap(),
         );
@@ -59,7 +55,7 @@ impl receiver_interface::Contract for FlashLoanReceiverContract {
 impl FlashLoanReceiverContractExt {
     pub fn init(
         e: Env,
-        token_id: BytesN<32>,
+        token_id: Address,
         fl_address: Address,
         amount: i128,
     ) -> Result<(), ReceiverError> {
