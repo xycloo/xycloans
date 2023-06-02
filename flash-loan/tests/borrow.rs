@@ -3,7 +3,7 @@
 use crate::flash_loan_receiver_standard::FlashLoanReceiverClient;
 use crate::flash_loan_receiver_standard_unsuccessful::FlashLoanReceiverClient as FlashLoanReceiverUnsuccessfulClient;
 use fixed_point_math::STROOP;
-use soroban_sdk::{contractimpl, testutils::Address as _, token, Address, BytesN, Env, Symbol};
+use soroban_sdk::{contractimpl, testutils::Address as _, token, Address, Env, Symbol};
 
 mod vault {
     use soroban_sdk::contractimport;
@@ -31,9 +31,7 @@ fn successful_borrow() {
     e.mock_all_auths();
 
     let admin1 = Address::random(&e);
-
     let user1 = Address::random(&e);
-    let user2 = Address::random(&e);
 
     let token_id = e.register_stellar_asset_contract(admin1);
     let token = token::Client::new(&e, &token_id);
@@ -75,9 +73,7 @@ fn unsuccessful_borrow() {
     e.mock_all_auths();
 
     let admin1 = Address::random(&e);
-
     let user1 = Address::random(&e);
-    let user2 = Address::random(&e);
 
     let token_id = e.register_stellar_asset_contract(admin1);
     let token = token::Client::new(&e, &token_id);
@@ -118,7 +114,7 @@ mod flash_loan_receiver_standard {
     use super::BalIncrementClient;
     use crate::{receiver_interface, token};
     use fixed_point_math::STROOP;
-    use soroban_sdk::{contractimpl, Address, BytesN, Env, Symbol};
+    use soroban_sdk::{contractimpl, Address, Env, Symbol};
 
     pub struct FlashLoanReceiver;
 
@@ -221,7 +217,7 @@ impl BalIncrement {
 
 mod flash_loan_receiver_standard_unsuccessful {
     use crate::{receiver_interface, token};
-    use soroban_sdk::{contractimpl, Address, BytesN, Env, Symbol};
+    use soroban_sdk::{contractimpl, Address, Env, Symbol};
 
     pub struct FlashLoanReceiver;
 

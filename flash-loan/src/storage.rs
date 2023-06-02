@@ -1,4 +1,4 @@
-use soroban_sdk::{token, Address, BytesN, Env};
+use soroban_sdk::{token, Address, Env};
 
 use crate::types::DataKey;
 

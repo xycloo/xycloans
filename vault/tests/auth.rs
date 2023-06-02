@@ -22,7 +22,7 @@ mod receiver_interface {
 use crate::flash_loan_receiver_standard::FlashLoanReceiverClient;
 
 use soroban_sdk::{contractimpl, token, vec, IntoVal, RawVal, Symbol};
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
+use soroban_sdk::{testutils::Address as _, Address, Env};
 
 #[test]
 fn vault_admin_auth() {
@@ -154,7 +154,7 @@ mod flash_loan_receiver_standard {
     use super::BalIncrementClient;
     use crate::{receiver_interface, token};
     use fixed_point_math::STROOP;
-    use soroban_sdk::{contractimpl, Address, BytesN, Env, Symbol};
+    use soroban_sdk::{contractimpl, Address, Env, Symbol};
 
     pub struct FlashLoanReceiver;
 

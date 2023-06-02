@@ -19,7 +19,7 @@ mod receiver_interface {
 }
 
 use fixed_point_math::STROOP;
-use soroban_sdk::{contractimpl, testutils::Address as _, token, Address, BytesN, Env, Symbol};
+use soroban_sdk::{contractimpl, testutils::Address as _, token, Address, Env, Symbol};
 
 use crate::flash_loan_receiver_standard::FlashLoanReceiverClient;
 
@@ -124,7 +124,7 @@ mod flash_loan_receiver_standard {
     use super::BalIncrementClient;
     use crate::{receiver_interface, token};
     use fixed_point_math::STROOP;
-    use soroban_sdk::{contractimpl, Address, BytesN, Env, Symbol};
+    use soroban_sdk::{contractimpl, Address, Env, Symbol};
 
     pub struct FlashLoanReceiver;
 

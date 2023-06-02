@@ -7,15 +7,16 @@ use crate::{
     token_utility::{get_token_client, read_flash_loan_balance, transfer_into_flash_loan},
     types::Error,
 };
-use soroban_sdk::{contractimpl, Address, BytesN, Env};
+use soroban_sdk::{contractimpl, Address, Env};
 
 pub trait VaultContractTrait {
-    /// Initializes the vault
-    /// @param admin Vault admin, the only address that can interact with the vault.
-    /// @param token_id Token that the vault manages and pays rewards with.
-    /// @param flash_loan Address of the paired flash loan, same token as the vault.
-    /// @param flash_loan_bytes Bytes of the flash loan contract [should be deprecated give the new Address::contract_id() method]
-    /// @returns an error if the contract has already been initialized.
+    /// initialize
+
+    /// Constructor function, only to be callable once
+    /// `initialize()` must be provided with:
+    /// `admin: Address` The vault's admin, effictively the pool's admin as the vault is the flash loan's admin.
+    /// `token_id: Address` The pool's token.
+    /// `flash_loan` The address of the associated flash loan contract. `flash_loan` should have `current_contract_address()` as `lp`.
     fn initialize(
         e: Env,
         admin: Address,
@@ -32,13 +33,9 @@ pub trait VaultContractTrait {
 
     fn withdraw_matured(e: Env, addr: Address) -> Result<(), Error>;
 
-    // needs to be re-implemented
-    fn get_shares(e: Env, id: Address) -> i128;
-
-    // should be removed by the end of the update
-    fn get_increment(e: Env, id: Address) -> Result<i128, Error>;
-
     fn withdraw(e: Env, addr: Address, amount: i128) -> Result<(), Error>;
+
+    fn shares(e: Env, id: Address) -> i128;
 }
 
 pub struct VaultContract;
@@ -156,7 +153,7 @@ impl VaultContractTrait for VaultContract {
         //        let flash_loan_id_bytes = get_flash_loan_bytes(&e);
         let flash_loan = get_flash_loan(&e);
         let flash_loan_client = flash_loan::Client::new(&e, &flash_loan);
-        flash_loan_client.withdraw(&e.current_contract_address(), &addr_deposit, &addr);
+        flash_loan_client.withdraw(&addr_deposit, &addr);
 
         // burn the shares
         burn_shares(&e, addr, amount);
@@ -164,14 +161,7 @@ impl VaultContractTrait for VaultContract {
         Ok(())
     }
 
-    fn get_shares(e: Env, id: Address) -> i128 {
-        //        get_collected_last_recorded(&e)
-        //read_matured_fees_particular(&e, id)
-        //        read_fee_per_share_particular(&e, id)
-        0
-    }
-
-    fn get_increment(e: Env, id: Address) -> Result<i128, Error> {
-        Ok(0)
+    fn shares(e: Env, id: Address) -> i128 {
+        read_balance(&e, id)
     }
 }

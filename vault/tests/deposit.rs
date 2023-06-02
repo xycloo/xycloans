@@ -10,7 +10,7 @@ mod loan_ctr {
     contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_flash_loan.wasm");
 }
 
-use soroban_sdk::{testutils::Address as _, token, Address, BytesN, Env};
+use soroban_sdk::{testutils::Address as _, token, Address, Env};
 
 #[test]
 fn deposit() {

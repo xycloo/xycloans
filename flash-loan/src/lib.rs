@@ -1,7 +1,4 @@
 #![no_std]
-//mod token {
-//    soroban_sdk::contractimport!(file = "../soroban_token_spec.wasm");
-//}
 
 mod vault {
     soroban_sdk::contractimport!(
@@ -10,6 +7,7 @@ mod vault {
 }
 
 mod contract;
+mod events;
 mod execution;
 mod storage;
 mod token_utility;
