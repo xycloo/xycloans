@@ -1,6 +1,6 @@
 use crate::{
     balance::{burn_shares, mint_shares},
-    flash_loan,
+    events, flash_loan,
     math::{compute_deposit, compute_shares_amount},
     rewards::{pay_matured, update_fee_per_share_universal, update_rewards},
     storage::*,
@@ -112,6 +112,7 @@ impl VaultContractTrait for VaultContract {
         // update the universal fee per share amount here to avoid the need for a collected_last_recorded storage slot.
         update_fee_per_share_universal(&e, amount);
 
+        events::fees_deposited(&e, amount);
         Ok(())
     }
 
@@ -139,8 +140,9 @@ impl VaultContractTrait for VaultContract {
         write_total_deposited(&e, amount);
 
         // mint the new shares to the lender
-        mint_shares(&e, from, shares);
+        mint_shares(&e, from.clone(), shares);
 
+        events::deposited(&e, from, amount);
         Ok(())
     }
 
@@ -149,14 +151,16 @@ impl VaultContractTrait for VaultContract {
         addr.require_auth();
 
         // pay the matured yield
-        pay_matured(&e, addr)?;
+        pay_matured(&e, addr.clone())?;
 
+        events::matured_withdrawn(&e, addr);
         Ok(())
     }
 
     fn update_fee_rewards(e: Env, addr: Address) -> Result<(), Error> {
-        update_rewards(&e, addr);
+        update_rewards(&e, addr.clone());
 
+        events::matured_updated(&e, addr);
         Ok(())
     }
 
@@ -193,7 +197,8 @@ impl VaultContractTrait for VaultContract {
         flash_loan_client.withdraw(&addr_deposit, &addr);
 
         // burn the shares
-        burn_shares(&e, addr, amount);
+        burn_shares(&e, addr.clone(), amount);
+        events::withdrawn(&e, addr, amount);
 
         Ok(())
     }

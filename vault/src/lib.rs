@@ -7,6 +7,7 @@ mod rewards;
 mod storage;
 mod token_utility;
 mod types;
+mod events;
 
 mod flash_loan {
     soroban_sdk::contractimport!(
