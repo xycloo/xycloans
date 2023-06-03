@@ -1,8 +1,8 @@
-use soroban_sdk::{contractimpl, Address, BytesN, Env};
+use soroban_sdk::{contractimpl, Address, Env};
 
 use crate::storage::*;
 use crate::types::Error;
-use crate::vault::{Client, Error as VaultErr};
+use crate::vault::Client;
 
 pub struct ProxyCommon;
 pub struct ProxyLP;
@@ -107,7 +107,7 @@ impl LPTrait for ProxyLP {
         let vault = get_vault(&env, token_contract_id)?;
         let vault_client = Client::new(&env, &vault);
 
-        vault_client.deposit(&env.current_contract_address(), &lender, &amount);
+        vault_client.deposit(&lender, &amount);
         Ok(())
     }
 
