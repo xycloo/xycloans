@@ -61,17 +61,12 @@ fn vault_admin_auth() {
     token.mint(&user1, &(10 * STROOP as i128));
     token.mint(&user2, &(10 * STROOP as i128));
 
-    vault_client.deposit(&user1, &user1, &(10 * STROOP as i128));
+    vault_client.deposit(&user1, &(10 * STROOP as i128));
     let expected_auth: Vec<(Address, Address, Symbol, soroban_sdk::Vec<RawVal>)> = std::vec![(
         user1.clone(),
         vault_id.clone(),
         Symbol::short("deposit"),
-        vec![
-            &e,
-            user1.into_val(&e),
-            user1.into_val(&e),
-            (10 * STROOP as i128).into_val(&e),
-        ],
+        vec![&e, user1.into_val(&e), (10 * STROOP as i128).into_val(&e),],
     )];
 
     assert_eq!(e.auths().get(0).unwrap(), expected_auth.get(0).unwrap());

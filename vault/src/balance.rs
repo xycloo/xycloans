@@ -7,7 +7,7 @@ use crate::storage::{
     remove_matured_fees_particular, write_balance,
 };
 
-pub fn mint_shares(e: &Env, to: Address, shares: i128) {
+pub(crate) fn mint_shares(e: &Env, to: Address, shares: i128) {
     let tot_supply = get_tot_supply(e);
     put_tot_supply(e, tot_supply + shares);
 
@@ -17,7 +17,7 @@ pub fn mint_shares(e: &Env, to: Address, shares: i128) {
 }
 
 // needs to be rewritten
-pub fn burn_shares(e: &Env, to: Address, shares: i128) {
+pub(crate) fn burn_shares(e: &Env, to: Address, shares: i128) {
     // update the total supply
     let tot_supply = get_tot_supply(e);
     put_tot_supply(e, tot_supply - shares);
@@ -35,16 +35,4 @@ pub fn burn_shares(e: &Env, to: Address, shares: i128) {
         balance.sub_assign(shares);
         write_balance(e, to, balance);
     }
-
-    /*    let key = DataKey::Batch(BatchKey(to, batch_n));
-
-    let mut batch: BatchObj = e.storage().get(&key).unwrap().unwrap();
-    batch.curr_s -= shares;
-
-
-    if batch.curr_s == 0 {
-        e.storage().remove(&key); // if there are 0 shares remove the batch
-    } else {
-        e.storage().set(&key, &batch);
-    }*/
 }

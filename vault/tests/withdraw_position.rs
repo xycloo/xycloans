@@ -61,11 +61,11 @@ fn withdraw_liquidity_position() {
     token.mint(&user1, &(100 * STROOP as i128));
     token.mint(&user2, &(100 * STROOP as i128));
 
-    vault_client.deposit(&user1, &user1, &(50 * STROOP as i128));
+    vault_client.deposit(&user1, &(50 * STROOP as i128));
 
     assert_eq!(token.balance(&user1), (50 * STROOP as i128));
 
-    vault_client.deposit(&user1, &user2, &(100 * STROOP as i128));
+    vault_client.deposit(&user2, &(100 * STROOP as i128));
     assert_eq!(token.balance(&user2), 0);
 
     vault_client.update_fee_rewards(&user2);
