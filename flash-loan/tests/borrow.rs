@@ -58,7 +58,7 @@ fn successful_borrow() {
     flash_loan_client.init(&token_id, &vault_id);
     vault_client.initialize(&user1, &token_id, &flash_loan_id);
 
-    vault_client.deposit(&user1, &user1, &(100 * 10000000));
+    vault_client.deposit(&user1, &(100 * 10000000));
 
     flash_loan_client.borrow(&receiver_id, &(100 * 10000000));
 
@@ -105,7 +105,7 @@ fn unsuccessful_borrow() {
     flash_loan_client.init(&token_id, &vault_id);
     vault_client.initialize(&user1, &token_id, &flash_loan_id);
 
-    vault_client.deposit(&user1, &user1, &(100 * 10000000));
+    vault_client.deposit(&user1, &(100 * 10000000));
 
     flash_loan_client.borrow(&receiver_contract_id, &(100 * 10000000));
 }
