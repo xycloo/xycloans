@@ -58,8 +58,8 @@ fn deposit() {
     flash_loan_client.init(&token_id, &vault_id);
     vault_client.initialize(&proxy_id, &token_id, &flash_loan_id);
 
-    proxy_client.set_vault(&protocol, &token_id, &vault_id);
-    proxy_client.set_flash_loan(&protocol, &token_id, &flash_loan_id);
+    proxy_client.set_vault(&token_id, &vault_id);
+    proxy_client.set_flash_loan(&token_id, &flash_loan_id);
 
     proxy_client.deposit(&lp, &token_id, &10000000);
 

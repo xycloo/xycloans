@@ -59,8 +59,8 @@ fn successful_borrow() {
     flash_loan_client.init(&token_id, &vault_id);
     vault_client.initialize(&proxy_id, &token_id, &flash_loan_id);
 
-    proxy_client.set_vault(&protocol, &token_id, &vault_id);
-    proxy_client.set_flash_loan(&protocol, &token_id, &flash_loan_id);
+    proxy_client.set_vault(&token_id, &vault_id);
+    proxy_client.set_flash_loan(&token_id, &flash_loan_id);
 
     usdc_token.mint(&lp, &1000000);
     proxy_client.deposit(&lp, &token_id, &1000000);
@@ -107,8 +107,8 @@ fn unsuccessful_borrow() {
     flash_loan_client.init(&token_id, &vault_id);
     vault_client.initialize(&proxy_id, &token_id, &flash_loan_id);
 
-    proxy_client.set_vault(&protocol, &token_id, &vault_id);
-    proxy_client.set_flash_loan(&protocol, &token_id, &flash_loan_id);
+    proxy_client.set_vault(&token_id, &vault_id);
+    proxy_client.set_flash_loan(&token_id, &flash_loan_id);
 
     usdc_token.mint(&lp, &1000000);
     proxy_client.deposit(&lp, &token_id, &1000000);

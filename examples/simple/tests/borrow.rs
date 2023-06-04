@@ -65,7 +65,7 @@ fn test_successful_borrow() {
 
     token.mint(&receiver_contract, &(STROOP));
 
-    vault_client.deposit(&user1, &user1, &(100 * STROOP));
+    vault_client.deposit(&user1, &(100 * STROOP));
 
     // Borrowing from the lender, this invocation will result in an invocation to your receiver contract (the one you wrote in `lib.rs`)
     flash_loan_client.borrow(&receiver_contract, &(100 * STROOP));
