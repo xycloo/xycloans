@@ -6,11 +6,11 @@ fn compute_fee(amount: &i128) -> i128 {
     amount / 2000 // 0.05%, still TBD
 }
 
-pub fn transfer(e: &Env, client: &token::Client, to: &Address, amount: &i128) {
+pub(crate) fn transfer(e: &Env, client: &token::Client, to: &Address, amount: &i128) {
     client.transfer(&e.current_contract_address(), to, amount);
 }
 
-pub fn xfer_from_to_fl(
+pub(crate) fn xfer_from_to_fl(
     e: &Env,
     client: &token::Client,
     from: &Address,
@@ -32,7 +32,7 @@ pub fn xfer_from_to_fl(
     }
 }
 
-pub fn try_repay(
+pub(crate) fn try_repay(
     e: &Env,
     client: &token::Client,
     receiver_id: &Address,
@@ -47,8 +47,7 @@ pub fn try_repay(
     transfer(e, client, &lp, &fees);
 
     // deposit fees into the vault
-    //    let vault_contract_id = lp.contract_id().unwrap(); // safe since we require lp to be a contract upon initialization
-    vault::Client::new(e, &lp).deposit_fees(&e.current_contract_address(), &fees);
+    vault::Client::new(e, &lp).deposit_fees(&fees);
 
     Ok(())
 }

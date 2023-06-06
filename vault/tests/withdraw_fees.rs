@@ -12,7 +12,7 @@ mod loan_ctr {
     contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_flash_loan.wasm");
 }
 
-use soroban_sdk::{testutils::Address as _, token, Address, BytesN, Env};
+use soroban_sdk::{testutils::Address as _, token, Address, Env};
 
 #[test]
 fn fee_withdraw_multiple_users() {
@@ -39,13 +39,13 @@ fn fee_withdraw_multiple_users() {
     token.mint(&user1, &(50 * STROOP as i128));
     token.mint(&user2, &(100 * STROOP as i128));
 
-    vault_client.deposit(&user1, &user1, &(50 * STROOP as i128));
+    vault_client.deposit(&user1, &(50 * STROOP as i128));
 
-    vault_client.deposit(&user1, &user2, &(100 * STROOP as i128));
+    vault_client.deposit(&user2, &(100 * STROOP as i128));
 
     // flash loan generates yield and deposits it into the vault
     token.mint(&vault_id, &(10 * STROOP as i128));
-    vault_client.deposit_fees(&flash_loan_id, &(10 * STROOP as i128));
+    vault_client.deposit_fees(&(10 * STROOP as i128));
 
     vault_client.update_fee_rewards(&user1);
     vault_client.update_fee_rewards(&user2);
@@ -57,13 +57,13 @@ fn fee_withdraw_multiple_users() {
 
     // flash loan generates yield and deposits it into the vault
     token.mint(&vault_id, &(10 * STROOP as i128));
-    vault_client.deposit_fees(&flash_loan_id, &(10 * STROOP as i128));
+    vault_client.deposit_fees(&(10 * STROOP as i128));
 
     assert_eq!(token.balance(&user1), 33333300);
     assert_eq!(token.balance(&user2), 66666600);
 
     token.mint(&user2, &(150 * STROOP as i128));
-    vault_client.deposit(&user1, &user2, &(150 * STROOP as i128));
+    vault_client.deposit(&user2, &(150 * STROOP as i128));
 
     vault_client.update_fee_rewards(&user2);
     vault_client.withdraw_matured(&user2);

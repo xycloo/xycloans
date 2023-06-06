@@ -19,7 +19,7 @@ mod receiver_interface {
 }
 
 use fixed_point_math::STROOP;
-use soroban_sdk::{contractimpl, testutils::Address as _, token, Address, BytesN, Env, Symbol};
+use soroban_sdk::{contractimpl, testutils::Address as _, token, Address, Env, Symbol};
 
 use crate::flash_loan_receiver_standard::FlashLoanReceiverClient;
 
@@ -61,11 +61,11 @@ fn withdraw_liquidity_position() {
     token.mint(&user1, &(100 * STROOP as i128));
     token.mint(&user2, &(100 * STROOP as i128));
 
-    vault_client.deposit(&user1, &user1, &(50 * STROOP as i128));
+    vault_client.deposit(&user1, &(50 * STROOP as i128));
 
     assert_eq!(token.balance(&user1), (50 * STROOP as i128));
 
-    vault_client.deposit(&user1, &user2, &(100 * STROOP as i128));
+    vault_client.deposit(&user2, &(100 * STROOP as i128));
     assert_eq!(token.balance(&user2), 0);
 
     vault_client.update_fee_rewards(&user2);
@@ -124,7 +124,7 @@ mod flash_loan_receiver_standard {
     use super::BalIncrementClient;
     use crate::{receiver_interface, token};
     use fixed_point_math::STROOP;
-    use soroban_sdk::{contractimpl, Address, BytesN, Env, Symbol};
+    use soroban_sdk::{contractimpl, Address, Env, Symbol};
 
     pub struct FlashLoanReceiver;
 

@@ -22,7 +22,7 @@ mod receiver_interface {
 use crate::flash_loan_receiver_standard::FlashLoanReceiverClient;
 
 use soroban_sdk::{contractimpl, token, vec, IntoVal, RawVal, Symbol};
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
+use soroban_sdk::{testutils::Address as _, Address, Env};
 
 #[test]
 fn vault_admin_auth() {
@@ -61,17 +61,12 @@ fn vault_admin_auth() {
     token.mint(&user1, &(10 * STROOP as i128));
     token.mint(&user2, &(10 * STROOP as i128));
 
-    vault_client.deposit(&user1, &user1, &(10 * STROOP as i128));
+    vault_client.deposit(&user1, &(10 * STROOP as i128));
     let expected_auth: Vec<(Address, Address, Symbol, soroban_sdk::Vec<RawVal>)> = std::vec![(
         user1.clone(),
         vault_id.clone(),
         Symbol::short("deposit"),
-        vec![
-            &e,
-            user1.into_val(&e),
-            user1.into_val(&e),
-            (10 * STROOP as i128).into_val(&e),
-        ],
+        vec![&e, user1.into_val(&e), (10 * STROOP as i128).into_val(&e),],
     )];
 
     assert_eq!(e.auths().get(0).unwrap(), expected_auth.get(0).unwrap());
@@ -154,7 +149,7 @@ mod flash_loan_receiver_standard {
     use super::BalIncrementClient;
     use crate::{receiver_interface, token};
     use fixed_point_math::STROOP;
-    use soroban_sdk::{contractimpl, Address, BytesN, Env, Symbol};
+    use soroban_sdk::{contractimpl, Address, Env, Symbol};
 
     pub struct FlashLoanReceiver;
 

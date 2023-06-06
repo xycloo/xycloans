@@ -1,33 +1,58 @@
-use soroban_sdk::{contractimpl, Address, BytesN, Env};
+use soroban_sdk::{contractimpl, Address, Env};
 
 use crate::storage::*;
 use crate::types::Error;
-use crate::vault::{Client, Error as VaultErr};
+use crate::vault::Client;
 
 pub struct ProxyCommon;
 pub struct ProxyLP;
 pub struct ProxyBorrow;
 
 pub trait AdminTrait {
+    /// initialize
+
+    /// Constructor function, only to be callable once
+
+    /// `initialize()` must be provided with:
+    /// `admin: Address` Address of the proxy's admin
+
+    /// The proxy's admin will only be able to plug in and out pools from the protocol
+    /// without having any control over the deposited funds.
     fn initialize(env: Env, admin: Address) -> Result<(), Error>;
 
+    /// set_vault
+
+    /// Plugs in the protocol a vault contract for a certain token.
+    /// Once both the vault and the associated flash loan are plugged in the proxy, there effictively is a new pool in the protocol.
+
+    /// `set_vault()` must be provided with:
+    /// `token_contract_id: Address` Address of the token used by the vault.
+    /// `vault_contract_id: Address` Address of the vault contract.
     fn set_vault(
         env: Env,
-        admin: Address,
         token_contract_id: Address,
         vault_contract_id: Address,
     ) -> Result<(), Error>;
 
+    /// set_flash_laon
+
+    /// Plugs in the protocol a flash loan contract for a certain token.
+    /// Once both the vault and the associated flash loan are plugged in the proxy, there effictively is a new pool in the protocol.
+
+    /// `set_flash_loan()` must be provided with:
+    /// `token_contract_id: Address` Address of the token used by the flash loan.
+    /// `flash_loan_contract_id: Address` Address of the flash loan contract.
     fn set_flash_loan(
         env: Env,
-        admin: Address,
         token_contract_id: Address,
         flash_loan_contract_id: Address,
     ) -> Result<(), Error>;
 }
 
+/// All the methods below route the invocations to the requested vault/flash loan.
+/// The user must provide the same arguments as in the vault's invocations, plus the `token_contract_id: Address`
+/// which tells the proxy which token the user is interacting with, which is then mapped to that token's vault.  
 pub trait LPTrait {
-    /// Deposit liquidity into an existing vault
     fn deposit(
         env: Env,
         lender: Address,
@@ -49,7 +74,6 @@ pub trait LPTrait {
 }
 
 pub trait BorrowTrait {
-    /// Borrow an `amount` of a token through a flash loan
     fn borrow(
         env: Env,
         token_contract_id: Address,
@@ -71,24 +95,20 @@ impl AdminTrait for ProxyCommon {
 
     fn set_vault(
         env: Env,
-        admin: Address,
         token_contract_id: Address,
         vault_contract_id: Address,
     ) -> Result<(), Error> {
-        check_admin(&env, &admin)?;
-        admin.require_auth();
+        get_admin(&env)?.require_auth();
         set_vault(&env, token_contract_id, vault_contract_id);
         Ok(())
     }
 
     fn set_flash_loan(
         env: Env,
-        admin: Address,
         token_contract_id: Address,
         flash_loan_contract_id: Address,
     ) -> Result<(), Error> {
-        check_admin(&env, &admin)?;
-        admin.require_auth();
+        get_admin(&env)?.require_auth();
         set_flash_loan(&env, token_contract_id, flash_loan_contract_id);
         Ok(())
     }
@@ -107,7 +127,7 @@ impl LPTrait for ProxyLP {
         let vault = get_vault(&env, token_contract_id)?;
         let vault_client = Client::new(&env, &vault);
 
-        vault_client.deposit(&env.current_contract_address(), &lender, &amount);
+        vault_client.deposit(&lender, &amount);
         Ok(())
     }
 
@@ -124,7 +144,6 @@ impl LPTrait for ProxyLP {
         lender: Address,
         token_contract_id: Address,
     ) -> Result<(), Error> {
-        //        lender.require_auth(); // auth isn't required here as we require it in the vault directly
         vault_withdraw_matured_fees(&env, lender, token_contract_id)?;
 
         Ok(())
@@ -136,8 +155,6 @@ impl LPTrait for ProxyLP {
         token_contract_id: Address,
         shares: i128,
     ) -> Result<(), Error> {
-        //        lender.require_auth(); // auth isn't required here as we require it in the vault directly
-
         let vault = get_vault(&env, token_contract_id)?;
         let vault_client = Client::new(&env, &vault);
 

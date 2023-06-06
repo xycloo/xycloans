@@ -10,7 +10,7 @@ mod loan_ctr {
     contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_flash_loan.wasm");
 }
 
-use soroban_sdk::{testutils::Address as _, token, Address, BytesN, Env};
+use soroban_sdk::{testutils::Address as _, token, Address, Env};
 
 #[test]
 fn deposit() {
@@ -39,7 +39,7 @@ fn deposit() {
     token.mint(&user2, &500000000);
     token.mint(&user3, &500000000);
 
-    vault_client.deposit(&user1, &user1, &1000000000);
+    vault_client.deposit(&user1, &1000000000);
     assert_eq!(token.balance(&user1), 0);
     assert_eq!(token.balance(&flash_loan_id), 1000000000);
     assert_eq!(token.balance(&vault_id), 0);
