@@ -1,8 +1,12 @@
 [package]
 name = "xycloans-flash-loan"
-version = "0.0.0"
+description = "xycLoans pool's flash loan contract."
+homepage = "https://xycloans.xycloo.com/"
+repository = "https://github.com/xycloo/xycloans"
+authors = ["Tommaso De Ponti <tommaso@xycloans.com>"]
+readme = "README.md"
+version.workspace = true
 edition = "2021"
-publish = false
 
 [lib]
 crate-type = ["cdylib"]

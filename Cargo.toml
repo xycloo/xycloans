@@ -4,11 +4,13 @@ members = [
     "flash-loan",
     "receiver-standard",
     "examples/simple",
-#    "examples/gba-simple",
     "vault",
     "vault-interface",
     "proxy",
 ]
+
+[workspace.package]
+version = "0.1.0"
 
 [profile.release-with-logs]
 inherits = "release"
