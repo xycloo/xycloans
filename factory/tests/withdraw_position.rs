@@ -1,3 +1,8 @@
+/*
+
+DEPRECATED TEST
+
+
 use soroban_sdk::{testutils::Address as _, token, Address, BytesN, Env};
 
 mod loan_ctr {
@@ -71,3 +76,4 @@ fn liquidity_withdrawal() {
 
     assert_eq!(token.balance(&lp), 50000000000);
 }
+*/

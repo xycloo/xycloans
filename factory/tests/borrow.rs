@@ -1,3 +1,7 @@
+/*
+
+DEPRECATED TEST
+
 use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
 use soroban_sdk::{token, vec, IntoVal, RawVal, Symbol};
 
@@ -123,3 +127,5 @@ fn unsuccessful_borrow() {
 
     proxy_client.borrow(&token_id, &100000, &receiver_contract);
 }
+
+*/

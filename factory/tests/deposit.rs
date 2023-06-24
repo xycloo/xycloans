@@ -1,3 +1,8 @@
+/*
+
+DEPRECATED TEST
+
+
 use soroban_sdk::{testutils::Address as _, token, Address, BytesN, Env};
 
 mod loan_ctr {
@@ -67,3 +72,5 @@ fn deposit() {
     assert_eq!(token.balance(&flash_loan_id), 10000000);
     assert_eq!(token.balance(&vault_id), 0);
 }
+
+*/

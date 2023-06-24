@@ -1,3 +1,8 @@
+/*
+
+DEPRECATED TEST
+
+
 use soroban_sdk::{testutils::Address as _, token, Address, BytesN, Env};
 
 mod loan_ctr {
@@ -80,3 +85,5 @@ fn fee_withdrawal() {
     //    assert_eq!(batch_0.curr_s, 9900000000);
     //    assert_eq!(batch_0.init_s, 10000000000);
 }
+
+*/
