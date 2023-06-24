@@ -1,10 +1,9 @@
 use crate::{
     balance::{burn_shares, mint_shares},
     events, flash_loan,
-    math::{compute_deposit, compute_shares_amount},
     rewards::{pay_matured, update_fee_per_share_universal, update_rewards},
     storage::*,
-    token_utility::{get_token_client, read_flash_loan_balance, transfer_into_flash_loan},
+    token_utility::{get_token_client, transfer_into_flash_loan},
     types::Error,
 };
 use soroban_sdk::{contractimpl, Address, Env};
@@ -117,30 +116,18 @@ impl VaultContractTrait for VaultContract {
     }
 
     fn deposit(e: Env, from: Address, amount: i128) -> Result<(), Error> {
-        // authenticate the admin and check authorization
-        auth_admin(&e);
-
         // we update the rewards before the deposit to avoid the abuse of the collected fees by withdrawing them with liquidity that didn't contribute to their generation.
         update_rewards(&e, from.clone());
 
         // construct the token client we'll use later on
         let token_client = get_token_client(&e);
 
-        // calculate the number of shares to mint
-        let total_supply = get_tot_supply(&e);
-        let total_deposited = read_total_deposited(&e);
-        let shares = if 0 == total_supply {
-            amount
-        } else {
-            compute_shares_amount(amount, total_supply, total_deposited)
-        };
-
         // transfer the funds into the flash loan
         transfer_into_flash_loan(&e, &token_client, &from, &amount);
-        write_total_deposited(&e, amount);
 
-        // mint the new shares to the lender
-        mint_shares(&e, from.clone(), shares);
+        // mint the new shares to the lender.
+        // shares to mint will always be the amount deposited, see https://github.com/xycloo/xycloans/issues/17
+        mint_shares(&e, from.clone(), amount);
 
         events::deposited(&e, from, amount);
         Ok(())
@@ -168,9 +155,6 @@ impl VaultContractTrait for VaultContract {
         // require lender auth for withdrawal
         addr.require_auth();
 
-        // construct the token client we'll use later on
-        let token_client = get_token_client(&e);
-
         let addr_balance = read_balance(&e, addr.clone());
 
         // if the desired burned shares are more than the lender's balance return an error
@@ -179,14 +163,19 @@ impl VaultContractTrait for VaultContract {
             return Err(Error::InvalidShareBalance);
         }
 
-        let total_supply = get_tot_supply(&e);
+        /*
+        This has been depreacted in release 0.2.0, but may be re-switched on in future upgrades.
+        The cost of using this approach compared to deposit = amount brings in more costs due to storage reads.
 
-        // compute addr's deposit corresponding to the burned shares
-        let addr_deposit = compute_deposit(
-            amount,
-            total_supply,
-            read_flash_loan_balance(&e, &token_client),
-        );
+            let token_client = get_token_client(&e);
+            let total_supply = get_tot_supply(&e);
+            // compute addr's deposit corresponding to the burned shares.
+            let addr_deposit = compute_deposit(
+                amount,
+                total_supply,
+                read_flash_loan_balance(&e, &token_client),
+            );
+         */
 
         // update addr's rewards
         update_rewards(&e, addr.clone());
@@ -194,12 +183,12 @@ impl VaultContractTrait for VaultContract {
         // pay out the corresponding deposit
         let flash_loan = get_flash_loan(&e);
         let flash_loan_client = flash_loan::Client::new(&e, &flash_loan);
-        flash_loan_client.withdraw(&addr_deposit, &addr);
+        flash_loan_client.withdraw(&amount, &addr);
 
         // burn the shares
         burn_shares(&e, addr.clone(), amount);
-        events::withdrawn(&e, addr, amount);
 
+        events::withdrawn(&e, addr, amount);
         Ok(())
     }
 

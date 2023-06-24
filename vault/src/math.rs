@@ -28,6 +28,7 @@ pub fn compute_fee_amount(
 }
 */
 
+/*
 pub(crate) fn compute_shares_amount(
     deposited: i128,
     total_supply: i128,
@@ -39,6 +40,7 @@ pub(crate) fn compute_shares_amount(
         .fixed_div_floor(pool_balance, STROOP.into())
         .unwrap()
 }
+*/
 
 pub(crate) fn compute_deposit(burned: i128, total_supply: i128, pool_balance: i128) -> i128 {
     pool_balance
