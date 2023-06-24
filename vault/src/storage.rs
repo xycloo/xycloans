@@ -12,6 +12,9 @@ pub(crate) fn get_tot_supply(e: &Env) -> i128 {
     e.storage().get(&key).unwrap_or(Ok(0)).unwrap()
 }
 
+/*
+Currently deprecated functions
+
 pub(crate) fn write_total_deposited(e: &Env, amount: i128) {
     let key = DataKey::TotalDeposited;
     e.storage().set(&key, &amount);
@@ -21,6 +24,17 @@ pub(crate) fn read_total_deposited(e: &Env) -> i128 {
     let key = DataKey::TotalDeposited;
     e.storage().get(&key).unwrap_or(Ok(0)).unwrap()
 }
+
+ */
+
+/*
+Probably deprecated-forever functions.
+Since release 0.2.0 xycLoans vaults don't require auth from the proxy anymore
+
+pub(crate) fn auth_admin(e: &Env) {
+    read_admin(e).require_auth();
+}
+*/
 
 pub(crate) fn write_balance(e: &Env, addr: Address, balance: i128) {
     let key = DataKey::Balance(addr);
@@ -97,14 +111,11 @@ pub(crate) fn get_flash_loan(e: &Env) -> Address {
     e.storage().get(&key).unwrap().unwrap()
 }
 
+// These functions
+
 pub(crate) fn has_administrator(e: &Env) -> bool {
     let key = DataKey::Admin;
     e.storage().has(&key)
-}
-
-pub(crate) fn read_admin(e: &Env) -> Address {
-    let key = DataKey::Admin;
-    e.storage().get_unchecked(&key).unwrap()
 }
 
 pub(crate) fn write_administrator(e: &Env, id: Address) {
@@ -112,6 +123,7 @@ pub(crate) fn write_administrator(e: &Env, id: Address) {
     e.storage().set(&key, &id);
 }
 
-pub(crate) fn auth_admin(e: &Env) {
-    read_admin(e).require_auth();
+pub(crate) fn read_admin(e: &Env) -> Address {
+    let key = DataKey::Admin;
+    e.storage().get_unchecked(&key).unwrap()
 }

@@ -14,7 +14,7 @@ pub trait VaultContractTrait {
     /// Constructor function, only to be callable once
 
     /// `initialize()` must be provided with:
-    /// `admin: Address` The vault's admin, effictively the pool's admin as the vault is the flash loan's admin. The admin in a vault is always the proxy contract.
+    /// `admin: Address` The vault's admin, effictively the pool's admin as the vault is the flash loan's admin. The admin is currently never used in release 0.2.0, but we are keeping it awaiting to see how the overall ecosystem revolves around governance.
     /// `token_id: Address` The pool's token.
     /// `flash_loan` The address of the associated flash loan contract. `flash_loan` should have `current_contract_address()` as `lp`.
     fn initialize(

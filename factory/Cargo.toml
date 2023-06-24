@@ -1,9 +1,9 @@
 [package]
-name = "xycloans-proxy"
-description = "Factory contract and proxy for xycLoans."
+name = "xycloans-factory"
+description = "Factory contract for xycLoans."
 homepage = "https://xycloans.xycloo.com/"
 repository = "https://github.com/xycloo/xycloans"
-authors = ["Tommaso De Ponti <tommaso@xycloans.com>"]
+authors = ["Tommaso De Ponti <tommaso@xycloo.com>"]
 readme = "README.md"
 version.workspace = true
 edition = "2021"

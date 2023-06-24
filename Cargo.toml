@@ -6,7 +6,7 @@ members = [
     "examples/simple",
     "vault",
     "vault-interface",
-    "proxy",
+    "factory",
 ]
 
 [workspace.package]
