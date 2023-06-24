@@ -116,6 +116,8 @@ impl VaultContractTrait for VaultContract {
     }
 
     fn deposit(e: Env, from: Address, amount: i128) -> Result<(), Error> {
+        from.require_auth();
+
         // we update the rewards before the deposit to avoid the abuse of the collected fees by withdrawing them with liquidity that didn't contribute to their generation.
         update_rewards(&e, from.clone());
 
