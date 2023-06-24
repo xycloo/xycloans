@@ -15,10 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Build
+    - name: Install components
       run: |
         rustup toolchain install nightly
         rustup component add rust-src --toolchain nightly-x86_64-unknown-linux-gnu
-        ./build
+    - name: Run build script
+        run: ./build.sh
+        shell: bash
     - name: Run tests
       run: cargo test
