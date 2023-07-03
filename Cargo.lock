@@ -1246,6 +1246,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "xycloans-merged-contract"
+version = "0.1.0"
+dependencies = [
+ "fixed-point-math",
+ "soroban-sdk",
+]
+
+[[package]]
 name = "xycloans-vault-interface"
 version = "0.1.0"
 dependencies = [

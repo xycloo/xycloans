@@ -1,0 +1,21 @@
+[package]
+name = "xycloans-merged-contract"
+description = "xycLoans pool contract. Merges the vault contract and flash loan contract together."
+homepage = "https://xycloans.xycloo.com/"
+repository = "https://github.com/xycloo/xycloans"
+authors = ["Tommaso De Ponti <tommaso@xycloo.com>"]
+readme = "README.md"
+version.workspace = true
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+
+[dependencies]
+soroban-sdk = { workspace = true }
+fixed-point-math = { workspace = true }
+
+[dev_dependencies]
+soroban-sdk = { workspace = true, features=["testutils"] }
+fixed-point-math = { workspace = true }

@@ -18,6 +18,4 @@ pub(crate) fn get_token_client(e: &Env) -> token::Client {
     token::Client::new(e, &get_token_id(e))
 }
 
-pub(crate) fn read_flash_loan_balance(e: &Env, client: &token::Client) -> i128 {
-    client.balance(&get_flash_loan(e))
-}
+
