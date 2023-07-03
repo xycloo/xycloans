@@ -48,8 +48,8 @@ fn test_deployer() {
     assert!(factory_client.try_get_vault_address(&token_address).is_ok())
 }
 
-// Below we test that the factory contract initializes the pair with the correct parameters.
-
+/// Below we test that the factory contract initializes the pair with the correct parameters
+/// by trying to deposit into the newly deployed pair.
 #[test]
 fn test_deposit() {
     let env = Env::default();

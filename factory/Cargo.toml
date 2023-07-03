@@ -11,6 +11,12 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib"]
 
+[features]
+
+# Pluggable flash loans and vaults are not included by default 
+default = []
+
+pluggable = []
 
 [dependencies]
 soroban-sdk = { workspace = true }

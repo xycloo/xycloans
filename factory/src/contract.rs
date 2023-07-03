@@ -6,7 +6,6 @@ use crate::{flash_loan, storage::*, vault};
 pub struct ProxyCommon;
 
 pub trait AdminTrait {
-    /// initialize.
     /// Constructor function, only to be callable once
 
     /// [`initialize()`] must be provided with:
@@ -21,22 +20,26 @@ pub trait AdminTrait {
         vault_hash: BytesN<32>,
     ) -> Result<(), Error>;
 
-    /// set_vault.
+    /// > This function is disabled by default, compile with --features pluggable to enable it.
+    /// 
     /// Plugs in the protocol a vault contract for a certain token.
     /// Once both the vault and the associated flash loan are plugged in the proxy, there effictively is a new pool in the protocol.
-
+    /// 
     /// [`set_vault()`] must be provided with:
     /// [`token_address: Address`] Address of the token used by the vault.
     /// [`vault_address: Address`] Address of the vault contract.
+    #[cfg(pluggable)]
     fn set_vault(env: Env, token_address: Address, vault_address: Address) -> Result<(), Error>;
 
-    /// set_flash_loan.
+    /// > This function is disabled by default, compile with --features pluggable to enable it.
+    /// 
     /// Plugs in the protocol a flash loan contract for a certain token.
     /// Once both the vault and the associated flash loan are plugged in the proxy, there effictively is a new pool in the protocol.
-
+    /// 
     /// [`set_flash_loan()`] must be provided with:
     /// [`token_address: Address`] Address of the token used by the flash loan.
     /// [`flash_loan_address: Address`] Address of the flash loan contract.
+    #[cfg(pluggable)]
     fn set_flash_loan(
         env: Env,
         token_address: Address,
@@ -76,12 +79,14 @@ impl AdminTrait for ProxyCommon {
         Ok(())
     }
 
+    #[cfg(pluggable)]
     fn set_vault(env: Env, token_address: Address, vault_address: Address) -> Result<(), Error> {
         read_admin(&env)?.require_auth();
         set_vault(&env, token_address, vault_address);
         Ok(())
     }
 
+    #[cfg(pluggable)]
     fn set_flash_loan(
         env: Env,
         token_address: Address,
