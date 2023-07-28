@@ -1,15 +1,9 @@
 // Some auth tests are depreacted since lender functions (excluding depositing) can now be directly invoked by a 3rd party without needing to go thorugh the protocol, thus making auth tests for such methods pointless.
 
-mod vault {
+mod pool {
     use soroban_sdk::contractimport;
 
-    contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_fl_vault.wasm");
-}
-
-mod loan_ctr {
-    use soroban_sdk::contractimport;
-
-    contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_flash_loan.wasm");
+    contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_pool_contract.wasm");
 }
 
 mod receiver_interface {
@@ -19,10 +13,10 @@ mod receiver_interface {
         file = "../target/wasm32-unknown-unknown/release/soroban_flash_loan_receiver_standard.wasm"
     );
 }
-use crate::flash_loan_receiver_standard::FlashLoanReceiverClient;
 
-use soroban_sdk::{contractimpl, token, vec, IntoVal, RawVal, Symbol};
+use soroban_sdk::{contractimpl, token, vec, IntoVal, Symbol, contract};
 use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::token::StellarAssetAdminInterface;
 
 #[test]
 fn vault_admin_auth() {
@@ -37,26 +31,22 @@ fn vault_admin_auth() {
     let token_id = e.register_stellar_asset_contract(admin1);
     let token = token::Client::new(&e, &token_id);
 
-    let vault_id = e.register_contract_wasm(&None, vault::WASM); // 5;32
-    let vault_client = vault::Client::new(&e, &vault_id);
+    let pool = e.register_contract_wasm(&None, pool::WASM);
+    let pool_client = pool::Client::new(&e, &pool);
 
-    let flash_loan_id = e.register_contract_wasm(&None, loan_ctr::WASM);
-    let flash_loan_client = loan_ctr::Client::new(&e, &flash_loan_id);
-
-    let increment_id = e.register_contract(&None, BalIncrement); // 2;32
-    let increment_client = BalIncrementClient::new(&e, &increment_id);
+//    let increment_id = e.register_contract(&None, BalIncrement); // 2;32
+//    let increment_client = BalIncrementClient::new(&e, &increment_id);
 
     let receiver_contract =
-        e.register_contract(None, crate::flash_loan_receiver_standard::FlashLoanReceiver);
+        e.register_contract(None, FlashLoanReceiver);
     let receiver_client = FlashLoanReceiverClient::new(&e, &receiver_contract);
 
-    token.mint(&increment_id, &1000000000);
+    token.mint(&receiver_contract, &1000000000);
 
-    receiver_client.init(&user1, &token_id, &increment_id, &flash_loan_id);
-    increment_client.init(&user1, &token_id);
+    receiver_client.init(&user1, &token_id, &pool);
+    // increment_client.init(&user1, &token_id);
 
-    flash_loan_client.init(&token_id, &vault_id);
-    vault_client.initialize(&user1, &token_id, &flash_loan_id);
+    pool_client.initialize(&user1, &token_id);
 
     token.mint(&user1, &(10 * STROOP as i128));
     token.mint(&user2, &(10 * STROOP as i128));
@@ -143,6 +133,8 @@ fn vault_admin_invalid_auth() {
     assert_eq!(e.recorded_top_authorizations(), []);
 }
 */
+
+/*
 
 use fixed_point_math::STROOP;
 mod flash_loan_receiver_standard {
@@ -247,5 +239,52 @@ impl BalIncrement {
             &id,
             &(amount - STROOP as i128),
         )
+    }
+}
+
+*/
+
+use fixed_point_math::STROOP;
+
+#[contract]
+pub struct FlashLoanReceiver;
+
+#[contractimpl]
+impl FlashLoanReceiver {
+    pub fn init(e: Env, admin: Address, token: Address, fl_addr: Address) {
+        admin.require_auth();
+        e.storage().instance().set(&Symbol::short("T"), &token);
+        e.storage().instance().set(&Symbol::short("FL"), &fl_addr);
+    }
+
+    pub fn exec_op(e: Env) -> Result<(), receiver_interface::ReceiverError> {
+        let token_client = token::Client::new(
+            &e,
+            &e.storage()
+                .instance()
+                .get::<Symbol, Address>(&Symbol::short("T"))
+                .unwrap()
+        );
+    
+        token_client.transfer(
+            &e.current_contract_address(),
+            &e.storage().instance()
+                .get::<Symbol, Address>(&Symbol::short("BAL"))
+                .unwrap(),
+            &(100 * STROOP as i128),
+        );
+
+        let total_amount = (100 * STROOP as i128) + compute_fee(&(100 * STROOP as i128));
+
+        token_client.approve(
+            &e.current_contract_address(),
+            &e.storage().instance()
+                .get::<Symbol, Address>(&Symbol::short("FL"))
+                .unwrap(),
+            &total_amount,
+            &(e.ledger().sequence() + 1)
+        );
+
+        Ok(())
     }
 }

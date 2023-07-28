@@ -15,3 +15,7 @@ mod flash_loan {
         file = "../target/wasm32-unknown-unknown/release/xycloans_flash_loan.wasm"
     );
 }
+
+pub fn compute_fee(amount: &i128) -> i128 {
+    amount / 2000 // 0.05%, still TBD
+}

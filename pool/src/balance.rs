@@ -8,12 +8,18 @@ use crate::storage::{
 };
 
 pub(crate) fn mint_shares(e: &Env, to: Address, shares: i128) {
-    let tot_supply = get_tot_supply(e);
-    put_tot_supply(e, tot_supply + shares);
+    // add to total supply
+    put_tot_supply(
+        e, 
+        get_tot_supply(e) + shares
+    );
 
-    let mut balance = read_balance(e, to.clone());
-    balance.add_assign(shares);
-    write_balance(e, to, balance);
+    // add to user balance
+    write_balance(
+        e, 
+        to.clone(), 
+        read_balance(e, to) + shares
+    );
 }
 
 // needs to be rewritten

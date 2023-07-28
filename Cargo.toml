@@ -1,13 +1,13 @@
 [workspace]
 resolver = "2"
 members = [
-    "flash-loan",
+    #"flash-loan",
     "receiver-standard",
     "examples/simple",
-    "vault",
-    "vault-interface",
+    #"vault",
+    #"vault-interface",
     "factory",
-    "merged"
+    "pool"
 ]
 
 [workspace.package]
@@ -29,7 +29,7 @@ lto = true
 
 
 [workspace.dependencies.soroban-sdk]
-version = "0.8.4"
+version = "0.9.2"
 
 
 [workspace.dependencies.fixed-point-math]

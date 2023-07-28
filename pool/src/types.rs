@@ -19,8 +19,10 @@ pub enum DataKey {
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum Error {
-    VaultAlreadyInitialized = 0,
-    InvalidAdminAuth = 1,
-    InvalidShareBalance = 2, // needs change
-    NoFeesMatured = 3,
+    AlreadyInitialized = 0,
+    NotInitialized = 1,
+    InvalidAdminAuth = 2,
+    InvalidShareBalance = 3, // needs change
+    NoFeesMatured = 4,
+    LoanNotRepaid = 5,
 }

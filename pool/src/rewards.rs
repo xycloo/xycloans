@@ -43,7 +43,7 @@ pub(crate) fn pay_matured(e: &Env, addr: Address) -> Result<(), Error> {
     }
 
     // transfer the matured yield to `addr` and update the particular matured fees storage slot
-    transfer(e, &token_client, &addr, matured);
+    transfer(e, &token_client, &addr, &matured);
     write_matured_fees_particular(e, addr, 0);
 
     Ok(())
