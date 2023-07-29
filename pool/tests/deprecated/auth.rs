@@ -1,4 +1,4 @@
-// Some auth tests are depreacted since lender functions (excluding depositing) can now be directly invoked by a 3rd party without needing to go thorugh the protocol, thus making auth tests for such methods pointless.
+// Auth tests are deprecated
 
 mod pool {
     use soroban_sdk::contractimport;
@@ -61,6 +61,7 @@ fn vault_admin_auth() {
 
     assert_eq!(e.auths().get(0).unwrap(), expected_auth.get(0).unwrap());
 }
+
 
 /*
     vault_client.update_fee_rewards(&user1);

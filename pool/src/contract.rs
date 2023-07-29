@@ -171,7 +171,7 @@ impl Vault for Pool {
     }
 }
 
-
+#[contractimpl]
 impl FlashLoan for Pool {
     fn borrow(e: Env, receiver_id: Address, amount: i128) -> Result<(), Error> {
         // load the flash loan's token and build the client.
