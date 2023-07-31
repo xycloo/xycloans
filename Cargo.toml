@@ -2,8 +2,8 @@
 resolver = "2"
 members = [
     #"flash-loan",
-    "receiver-standard",
-    "examples/simple",
+    #"receiver-standard",
+    #"examples/simple",
     #"vault",
     #"vault-interface",
     "factory",

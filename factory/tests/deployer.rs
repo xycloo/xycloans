@@ -11,6 +11,7 @@ mod pool {
     contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_pool.wasm");
 }
 
+// Tests that the factory contract can deploy a pool contract.
 #[test]
 fn test_deployer() {
     let env: Env = Default::default();
