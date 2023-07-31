@@ -5,100 +5,161 @@
 
 mod pool {
     use soroban_sdk::contractimport;
-    contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_pool_contract.wasm");
+    contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_pool.wasm");
 }
 
 use fixed_point_math::STROOP;
 use soroban_sdk::{contractimpl, testutils::Address as _, token, Address, Env, Symbol, contract};
 
+// Only tests the barebones liquidity withdrawal functionality.
 #[test]
-fn withdraw_liquidity_position() {
-    let e: Env = Default::default();
-    e.mock_all_auths();
-    e.budget().reset_unlimited();
+fn withdraw_liquidity_raw() {
+    let env: Env = Default::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
 
-    let admin1 = Address::random(&e);
+    let admin1 = Address::random(&env);
+    let user1 = Address::random(&env);
 
-    let user1 = Address::random(&e);
-    let user2 = Address::random(&e);
+    let token_id = env.register_stellar_asset_contract(admin1);
+    let token_admin = token::AdminClient::new(&env, &token_id);
+    let token = token::Client::new(&env, &token_id);
 
-    let token_id = e.register_stellar_asset_contract(admin1);
-    let token_admin = token::AdminClient::new(&e, &token_id);
-    let token = token::Client::new(&e, &token_id);
+    let pool_addr = env.register_contract_wasm(&None, pool::WASM);
+    let pool_client = pool::Client::new(&env, &pool_addr);
 
-    let pool_addr = e.register_contract_wasm(&None, pool::WASM);
-    let pool_client = pool::Client::new(&e, &pool_addr);
+    // initialize the pool.
+    pool_client.initialize(&user1, &token_id);
 
-    let receiver = e.register_contract(None, FlashLoanReceiver);
-    let receiver_client = FlashLoanReceiverClient::new(&e, &receiver);
+    token_admin.mint(&user1, &(100 * STROOP as i128));
     
+    // user1 deposits 50 TOKEN into the pool.
+    pool_client.deposit(&user1, &(50 * STROOP as i128));
+    assert_eq!(token.balance(&user1), (50 * STROOP as i128));
+    assert_eq!(token.balance(&pool_addr), (50 * STROOP as i128));
+
+    pool_client.withdraw(&user1, &(30 * STROOP as i128));
+    assert_eq!(token.balance(&user1), (80 * STROOP as i128));
+    assert_eq!(token.balance(&pool_addr), (20 * STROOP as i128));
+}
+
+// Tests the liquidity withdrawal functionality after having 
+// matured yield. Expected behaviour is for the withdrawal
+// to not also withdraw matured yield, only to update the
+// rewards amount.
+#[test]
+fn withdraw_liquidity_with_yield_raw() {
+    let env: Env = Default::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin1 = Address::random(&env);
+    let user1 = Address::random(&env);
+
+    let token_id = env.register_stellar_asset_contract(admin1);
+    let token_admin = token::AdminClient::new(&env, &token_id);
+    let token = token::Client::new(&env, &token_id);
+
+    let pool_addr = env.register_contract_wasm(&None, pool::WASM);
+    let pool_client = pool::Client::new(&env, &pool_addr);
+
+    // Register, initialize and fund the receiver contract.
+    // The receiver contract is needed to generate yield
+    // since it borrows a flash loan and repays it + interest. 
+    let receiver = env.register_contract(None, FlashLoanReceiver);
+    let receiver_client = FlashLoanReceiverClient::new(&env, &receiver);
     receiver_client.init(&user1, &token_id, &pool_addr);
-    
-    pool_client.initialize(&user1, &token_id); // user1 is the vault's admin
-
     token_admin.mint(&receiver, &(100 * STROOP as i128));
+
+    // initialize the pool.
+    pool_client.initialize(&user1, &token_id);
+
+    token_admin.mint(&user1, &(100 * STROOP as i128));
+    
+    // user1 deposits 50 TOKEN into the pool.
+    pool_client.deposit(&user1, &(50 * STROOP as i128));
+    assert_eq!(token.balance(&user1), (50 * STROOP as i128));
+    assert_eq!(token.balance(&pool_addr), (50 * STROOP as i128));
+
+    // Flash loan borrow occurs.
+    // It generates yield which is held in the pool.
+    pool_client.borrow(&receiver, &(50 * STROOP as i128));
+    
+    // Expected 0.05% fee on the borrow.
+    let expected_yield = 250_000;
+
+    pool_client.withdraw(&user1, &(30 * STROOP as i128));
+    assert_eq!(token.balance(&user1), (80 * STROOP as i128));
+    assert_eq!(token.balance(&pool_addr), (20 * STROOP as i128) + expected_yield);
+
+    assert_eq!(pool_client.matured(&user1), expected_yield)
+}
+
+// Tests that once an address' liquidity is out of the pool
+// their matured yield doesn't grow. In simpler terms, we're
+// checking that the rewards formula works as expected.
+#[test]
+fn yield_availability() {
+    let env: Env = Default::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin1 = Address::random(&env);
+    let user1 = Address::random(&env);
+    let user2 = Address::random(&env);
+
+    let token_id = env.register_stellar_asset_contract(admin1);
+    let token_admin = token::AdminClient::new(&env, &token_id);
+    let token = token::Client::new(&env, &token_id);
+
+    let pool_addr = env.register_contract_wasm(&None, pool::WASM);
+    let pool_client = pool::Client::new(&env, &pool_addr);
+
+    // Register, initialize and fund the receiver contract.
+    // The receiver contract is needed to generate yield
+    // since it borrows a flash loan and repays it + interest. 
+    let receiver = env.register_contract(None, FlashLoanReceiver);
+    let receiver_client = FlashLoanReceiverClient::new(&env, &receiver);
+    receiver_client.init(&user1, &token_id, &pool_addr);
+    token_admin.mint(&receiver, &(100 * STROOP as i128));
+
+    // initialize the pool.
+    pool_client.initialize(&user1, &token_id);
+
     token_admin.mint(&user1, &(100 * STROOP as i128));
     token_admin.mint(&user2, &(100 * STROOP as i128));
-
+    
+    // user1 deposits 50 TOKEN into the pool.
     pool_client.deposit(&user1, &(50 * STROOP as i128));
-
     assert_eq!(token.balance(&user1), (50 * STROOP as i128));
+    assert_eq!(token.balance(&pool_addr), (50 * STROOP as i128));
 
-    pool_client.deposit(&user2, &(100 * STROOP as i128));
-    assert_eq!(token.balance(&user2), 0);
+    // user2 deposits 50 TOKEN into the pool.
+    pool_client.deposit(&user2, &(50 * STROOP as i128));
+    assert_eq!(token.balance(&user2), (50 * STROOP as i128));
+    assert_eq!(token.balance(&pool_addr), (100 * STROOP as i128));
 
-    pool_client.update_fee_rewards(&user2);
-    let res = pool_client.try_withdraw_matured(&user2);
-    assert!(res.is_err()); // error since no fees have been generated yet
-    assert_eq!(token.balance(&user2), 0);
-
-    // the flash loan is used and the receiver contract successfully re-pays the loan + a fee of half a tenth of a stroop
-    pool_client.borrow(&receiver, &(100 * STROOP as i128));
-
-    pool_client.update_fee_rewards(&user2);
-    pool_client.withdraw_matured(&user2);
-
-    let error = 33;
-
-    assert!(
-        2 * (STROOP / 10) as i128 / (2 * 3) - error <= token.balance(&user2)
-            && token.balance(&user2) <= 2 * (STROOP / 10) as i128 / (2 * 3) + error
-    ); // 2/3 of the fee from the borrow at line 87 => 2/3 of half a tenth of a stroop (0.05% of 100 * 1e7). We can tolerate a small error given by periodic numbers (it should be 333333 but it's actually 333300)
-
-    let previous_balance = token.balance(&pool_addr);
-    pool_client.withdraw(&user1, &(25 * STROOP as i128));
-    assert_eq!(token.balance(&pool_addr), previous_balance - (25 * STROOP as i128));
-    assert_eq!(token.balance(&user1), (75 * STROOP) as i128);
+    // Flash loan borrow occurs.
+    // It generates yield which is held in the pool.
+    pool_client.borrow(&receiver, &(50 * STROOP as i128));
+    
+    // Expected 0.05% fee on the borrow.
+    let expected_yield = 250_000;
+    let expected_yield_per_user = 125_000;
 
     pool_client.update_fee_rewards(&user1);
-    pool_client.withdraw_matured(&user1);
+    pool_client.withdraw(&user1, &(50 * STROOP as i128));
+    assert_eq!(token.balance(&user1), (100 * STROOP as i128));
+    assert_eq!(token.balance(&pool_addr), (50 * STROOP as i128) + expected_yield);
+    
+    assert_eq!(pool_client.matured(&user1), expected_yield_per_user);
 
-    assert!(
-        token.balance(&user1) >= 75 * STROOP as i128 + (STROOP / 10) as i128 / (2 * 3) - error
-            && token.balance(&user1)
-                <= 75 * STROOP as i128 + (STROOP / 10) as i128 / (2 * 3) + error
-    ); // the deposit (75 * 1e7) + 1/3 of the fee from the borrow at line 86 => 1/3 of half a tenth of a stroop (0.05% of 100 * 1e7). We can tolerate a small error given by periodic numbers (it should be 750166666 but it's actually 750166650)
-
-    // the flash loan is used and the receiver contract successfully re-pays the loan + a fee of half a tenth of a stroop
-    assert_eq!(token.balance(&pool_addr), (125 * STROOP as i128));
-    pool_client.borrow(&receiver, &(100 * STROOP as i128));
-
-    pool_client.update_fee_rewards(&user1);
-    pool_client.withdraw_matured(&user1);
-
-    assert!(
-        token.balance(&user1)
-            >= 75 * STROOP as i128
-                + (STROOP / 10) as i128 / (2 * 3)
-                + (STROOP / 10) as i128 / (2 * 5)
-                - error // ideally we double the error but here it isn't needed since it wasn't calibrated for this op anyways
-            && token.balance(&user1)
-                <= 75 * STROOP as i128
-                    + (STROOP / 10) as i128 / (2 * 3)
-                    + (STROOP / 10) as i128 / (2 * 5)
-                    + error
-    ); // the deposit (75 * 1e7) + 1/3 (50 shares of 100) of the fee from the borrow at line 86 + 1/5 (25 shares of 125) of the fee from the borrow at line 112
+    // Flash loan borrow occurs.
+    // It generates yield which is held in the pool.
+    pool_client.borrow(&receiver, &(50 * STROOP as i128));
+    
 }
+
 
 #[contract]
 pub struct FlashLoanReceiver;

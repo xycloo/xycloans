@@ -3,7 +3,7 @@
 mod pool {
     use soroban_sdk::contractimport;
 
-    contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_pool_contract.wasm");
+    contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_pool.wasm");
 }
 
 mod receiver_interface {

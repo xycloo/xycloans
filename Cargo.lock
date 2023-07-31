@@ -1522,7 +1522,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "xycloans-pool-contract"
+name = "xycloans_pool"
 version = "0.1.0"
 dependencies = [
  "fixed-point-math",

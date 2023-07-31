@@ -61,10 +61,11 @@ pub trait Vault {
     /// `amount: i28` Amount of shares that are being withdrawn
     fn withdraw(env: Env, addr: Address, amount: i128) -> Result<(), Error>;
 
-    /// shares
+    /// Returns the amount of shares that an address holds.
+    fn shares(e: Env, addr: Address) -> i128;
 
-    /// Getter function, returns the amount of shares that `id: Address` holds.
-    fn shares(e: Env, id: Address) -> i128;
+    /// Returns the amount of matured fees for an address.
+    fn matured(env: Env, addr: Address) -> i128;
 }
 
 pub trait Initializable {
@@ -166,8 +167,12 @@ impl Vault for Pool {
         Ok(())
     }
 
-    fn shares(e: Env, id: Address) -> i128 {
-        read_balance(&e, id)
+    fn shares(e: Env, addr: Address) -> i128 {
+        read_balance(&e, addr)
+    }
+
+    fn matured(env: Env, addr: Address) -> i128 {
+        read_matured_fees_particular(&env, addr)
     }
 }
 

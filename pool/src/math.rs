@@ -2,7 +2,7 @@ use core::ops::{Add, Sub};
 
 use fixed_point_math::{FixedPoint, STROOP};
 
-pub(crate) fn compute_fee_per_share(
+pub fn compute_fee_per_share(
     fee_per_share_universal: i128,
     accrued_interest: i128,
     total_supply: i128,
@@ -14,7 +14,7 @@ pub(crate) fn compute_fee_per_share(
     )
 }
 
-pub(crate) fn compute_fee_earned(
+pub fn compute_fee_earned(
     user_balance: i128,
     fee_per_share_universal: i128,
     fee_per_share_particular: i128,

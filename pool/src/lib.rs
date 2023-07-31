@@ -2,7 +2,7 @@
 
 mod balance;
 mod contract;
-mod math;
+pub mod math;
 mod rewards;
 mod storage;
 mod token_utility;
