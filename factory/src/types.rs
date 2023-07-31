@@ -4,10 +4,8 @@ use soroban_sdk::{contracterror, contracttype, Address};
 #[contracttype]
 pub enum DataKey {
     Admin,
-    FlashLoanHash,
-    VaultHash,
-    Vault(Address),
-    FlashLoan(Address),
+    PoolHash,
+    Pool(Address),
 }
 
 #[derive(Copy, Clone, Debug)]

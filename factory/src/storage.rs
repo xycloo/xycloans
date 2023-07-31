@@ -3,11 +3,11 @@ use soroban_sdk::{unwrap::UnwrapOptimized, Address, BytesN, Env};
 use crate::types::{DataKey, Error};
 
 pub(crate) fn set_admin(env: &Env, admin: Address) {
-    env.storage().set(&DataKey::Admin, &admin);
+    env.storage().instance().set(&DataKey::Admin, &admin);
 }
 
 pub(crate) fn read_admin(env: &Env) -> Result<Address, Error> {
-    if let Some(Ok(admin_id)) = env.storage().get(&DataKey::Admin) {
+    if let Some(admin_id) = env.storage().instance().get(&DataKey::Admin) {
         Ok(admin_id)
     } else {
         Err(Error::NotInitialized)
@@ -15,57 +15,32 @@ pub(crate) fn read_admin(env: &Env) -> Result<Address, Error> {
 }
 
 pub(crate) fn has_admin(env: &Env) -> bool {
-    env.storage().has(&DataKey::Admin)
+    env.storage().instance().has(&DataKey::Admin)
 }
 
-pub(crate) fn set_vault(env: &Env, token_address: Address, vault_address: Address) {
-    let key = &DataKey::Vault(token_address);
-    env.storage().set(key, &vault_address);
+pub(crate) fn set_pool(env: &Env, token_address: Address, pool_address: Address) {
+    let key = &DataKey::Pool(token_address);
+    env.storage().persistent().set(key, &pool_address);
 }
 
-pub(crate) fn read_vault(env: &Env, token_address: Address) -> Result<Address, Error> {
-    let key = &DataKey::Vault(token_address);
-    if let Some(Ok(vault_address)) = env.storage().get(key) {
+pub(crate) fn read_pool(env: &Env, token_address: Address) -> Result<Address, Error> {
+    let key = &DataKey::Pool(token_address);
+    if let Some(vault_address) = env.storage().persistent().get(key) {
         Ok(vault_address)
     } else {
         Err(Error::VaultDoesntExist)
     }
 }
 
-pub(crate) fn set_flash_loan(env: &Env, token_address: Address, flash_loan_address: Address) {
-    let key = &DataKey::FlashLoan(token_address);
-    env.storage().set(key, &flash_loan_address);
-}
-
-pub(crate) fn read_flash_loan(env: &Env, token_address: Address) -> Result<Address, Error> {
-    let key = &DataKey::FlashLoan(token_address);
-    if let Some(Ok(flash_loan_address)) = env.storage().get(key) {
-        Ok(flash_loan_address)
-    } else {
-        Err(Error::FlashLoanDoesntExist)
-    }
-}
-
-pub(crate) fn read_flash_loan_hash(env: &Env) -> BytesN<32> {
+pub(crate) fn read_pool_hash(env: &Env) -> BytesN<32> {
     env.storage()
-        .get(&DataKey::FlashLoanHash)
-        .unwrap_optimized() // safe, only called after the admin is read, thus after the factory was initialized
+        .instance()
+        .get(&DataKey::PoolHash)
         .unwrap_optimized()
 }
 
-pub(crate) fn read_vault_hash(env: &Env) -> BytesN<32> {
-    env.storage()
-        .get(&DataKey::VaultHash)
-        .unwrap_optimized() // safe, only called after the admin is read, thus after the factory was initialized
-        .unwrap_optimized()
-}
-
-pub(crate) fn write_flash_loan_hash(env: &Env, hash: &BytesN<32>) {
-    env.storage().set(&DataKey::FlashLoanHash, hash)
-}
-
-pub(crate) fn write_vault_hash(env: &Env, hash: &BytesN<32>) {
-    env.storage().set(&DataKey::VaultHash, hash)
+pub(crate) fn write_pool_hash(env: &Env, hash: &BytesN<32>) {
+    env.storage().instance().set(&DataKey::PoolHash, hash)
 }
 
 /*

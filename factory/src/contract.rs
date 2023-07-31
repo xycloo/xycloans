@@ -1,11 +1,24 @@
-use soroban_sdk::{contractimpl, Address, BytesN, Env};
+use soroban_sdk::{contractimpl, Address, BytesN, Env, contract};
 
 use crate::types::Error;
-use crate::{flash_loan, storage::*, vault};
+use crate::{storage::*, pool};
 
-pub struct ProxyCommon;
+#[contract]
+pub struct XycloansFactory;
 
-pub trait AdminTrait {
+pub trait PluggableInterface {
+    /// > This function is disabled by default, compile with --features pluggable to enable it.
+    /// 
+    /// Plugs in the protocol a vault contract for a certain token.
+    /// Once both the vault and the associated flash loan are plugged in the proxy, there effictively is a new pool in the protocol.
+    /// 
+    /// [`set_vault()`] must be provided with:    /// [`set_vault()`] must be provided with:
+    /// [`token_address: Address`] Address of the token used by the vault.
+    /// [`pool_address: Address`] Address of the vault contract.
+    fn set_pool(env: Env, token_address: Address, pool_address: Address) -> Result<(), Error>;
+}
+
+pub trait AdminInterface {
     /// Constructor function, only to be callable once
 
     /// [`initialize()`] must be provided with:
@@ -16,125 +29,78 @@ pub trait AdminTrait {
     fn initialize(
         env: Env,
         admin: Address,
-        flash_loan_hash: BytesN<32>,
-        vault_hash: BytesN<32>,
-    ) -> Result<(), Error>;
-
-    /// > This function is disabled by default, compile with --features pluggable to enable it.
-    /// 
-    /// Plugs in the protocol a vault contract for a certain token.
-    /// Once both the vault and the associated flash loan are plugged in the proxy, there effictively is a new pool in the protocol.
-    /// 
-    /// [`set_vault()`] must be provided with:
-    /// [`token_address: Address`] Address of the token used by the vault.
-    /// [`vault_address: Address`] Address of the vault contract.
-    #[cfg(feature = "pluggable")]
-    fn set_vault(env: Env, token_address: Address, vault_address: Address) -> Result<(), Error>;
-
-    /// > This function is disabled by default, compile with --features pluggable to enable it.
-    /// 
-    /// Plugs in the protocol a flash loan contract for a certain token.
-    /// Once both the vault and the associated flash loan are plugged in the proxy, there effictively is a new pool in the protocol.
-    /// 
-    /// [`set_flash_loan()`] must be provided with:
-    /// [`token_address: Address`] Address of the token used by the flash loan.
-    /// [`flash_loan_address: Address`] Address of the flash loan contract.
-    #[cfg(feature = "pluggable")]
-    fn set_flash_loan(
-        env: Env,
-        token_address: Address,
-        flash_loan_address: Address,
+        pool_hash: BytesN<32>,
     ) -> Result<(), Error>;
 
     /// Deploys a flash loan-vault pair and initializes them accordingly.
     fn deploy_pair(
         env: Env,
         token_address: Address,
-        salt: (BytesN<32>, BytesN<32>),
+        salt: BytesN<32>,
     ) -> Result<(), Error>;
+}
 
+pub trait Common {
     /// Reads from the storage the flash loan contract for a given token
-    fn get_flash_loan_address(env: Env, token_address: Address) -> Result<Address, Error>;
-
-    /// Reads from the storage the vault contract for a given token
-    fn get_vault_address(env: Env, token_address: Address) -> Result<Address, Error>;
+    fn get_pool_address(env: Env, token_address: Address) -> Result<Address, Error>;
 }
 
 #[contractimpl]
-impl AdminTrait for ProxyCommon {
+impl AdminInterface for XycloansFactory {
     fn initialize(
         env: Env,
         admin: Address,
-        flash_loan_hash: BytesN<32>,
-        vault_hash: BytesN<32>,
+        pool_hash: BytesN<32>,
     ) -> Result<(), Error> {
         if has_admin(&env) {
             return Err(Error::AlreadyInitialized);
         }
 
         set_admin(&env, admin);
-        write_flash_loan_hash(&env, &flash_loan_hash);
-        write_vault_hash(&env, &vault_hash);
+        write_pool_hash(&env, &pool_hash);
 
-        Ok(())
-    }
-
-    #[cfg(pluggable)]
-    fn set_vault(env: Env, token_address: Address, vault_address: Address) -> Result<(), Error> {
-        read_admin(&env)?.require_auth();
-        set_vault(&env, token_address, vault_address);
-        Ok(())
-    }
-
-    #[cfg(pluggable)]
-    fn set_flash_loan(
-        env: Env,
-        token_address: Address,
-        flash_loan_address: Address,
-    ) -> Result<(), Error> {
-        read_admin(&env)?.require_auth();
-        set_flash_loan(&env, token_address, flash_loan_address);
         Ok(())
     }
 
     fn deploy_pair(
         env: Env,
         token_address: Address,
-        salt: (BytesN<32>, BytesN<32>),
+        salt: BytesN<32>,
     ) -> Result<(), Error> {
         read_admin(&env)?.require_auth();
 
-        let vault_contract = env
+        let pool_address = env
             .deployer()
-            .with_current_contract(&salt.0)
-            .deploy(&read_vault_hash(&env));
-        let flash_loan_contract = env
-            .deployer()
-            .with_current_contract(&salt.1)
-            .deploy(&read_flash_loan_hash(&env));
+            .with_address(
+                env.current_contract_address(), 
+                salt
+            ).deploy(read_pool_hash(&env));
 
-        let vault = vault::Client::new(&env, &vault_contract);
-        let flash_loan = flash_loan::Client::new(&env, &flash_loan_contract);
+        let pool = pool::Client::new(&env, &pool_address);
 
-        vault.initialize(
-            &env.current_contract_address(),
+        pool.initialize(
+            &read_admin(&env)?,
             &token_address,
-            &flash_loan_contract,
         );
-        flash_loan.init(&token_address, &vault_contract);
-
-        set_vault(&env, token_address.clone(), vault_contract);
-        set_flash_loan(&env, token_address, flash_loan_contract);
-
+        
+        set_pool(&env, token_address, pool_address);
         Ok(())
     }
+}
 
-    fn get_flash_loan_address(env: Env, token_address: Address) -> Result<Address, Error> {
-        read_flash_loan(&env, token_address)
+impl Common for XycloansFactory {
+    fn get_pool_address(env: Env, token_address: Address) -> Result<Address, Error> {
+        read_pool(&env, token_address)
     }
+}
 
-    fn get_vault_address(env: Env, token_address: Address) -> Result<Address, Error> {
-        read_vault(&env, token_address)
+#[cfg(feature = "pluggable")]
+impl PluggableInterface for XycloansFactory {
+    fn set_pool(env: Env, token_address: Address, pool_address: Address) -> Result<(), Error> {
+        read_admin(&env)?.require_auth();
+
+        set_vault(&env, token_address, vault_address);
+        Ok(())
     }
 }
 
