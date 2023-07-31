@@ -88,6 +88,7 @@ impl AdminInterface for XycloansFactory {
     }
 }
 
+#[contractimpl]
 impl Common for XycloansFactory {
     fn get_pool_address(env: Env, token_address: Address) -> Result<Address, Error> {
         read_pool(&env, token_address)

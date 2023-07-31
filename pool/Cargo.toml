@@ -11,7 +11,7 @@ edition = "2021"
 [lib]
 name = "xycloans_pool"
 path = "src/lib.rs"
-#crate-type = ["cdylib"]
+crate-type = ["cdylib"]
 
 [dependencies]
 soroban-sdk = { workspace = true }
