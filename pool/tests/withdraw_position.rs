@@ -9,7 +9,7 @@ mod pool {
 }
 
 use fixed_point_math::STROOP;
-use soroban_sdk::{contractimpl, testutils::Address as _, token, Address, Env, Symbol, contract};
+use soroban_sdk::{contract, contractimpl, testutils::Address as _, token, Address, Env, Symbol};
 
 // Only tests the barebones liquidity withdrawal functionality.
 #[test]
@@ -32,7 +32,7 @@ fn withdraw_liquidity_raw() {
     pool_client.initialize(&user1, &token_id);
 
     token_admin.mint(&user1, &(100 * STROOP as i128));
-    
+
     // user1 deposits 50 TOKEN into the pool.
     pool_client.deposit(&user1, &(50 * STROOP as i128));
     assert_eq!(token.balance(&user1), (50 * STROOP as i128));
@@ -43,7 +43,7 @@ fn withdraw_liquidity_raw() {
     assert_eq!(token.balance(&pool_addr), (20 * STROOP as i128));
 }
 
-// Tests the liquidity withdrawal functionality after having 
+// Tests the liquidity withdrawal functionality after having
 // matured yield. Expected behaviour is for the withdrawal
 // to not also withdraw matured yield, only to update the
 // rewards amount.
@@ -65,7 +65,7 @@ fn withdraw_liquidity_with_yield_raw() {
 
     // Register, initialize and fund the receiver contract.
     // The receiver contract is needed to generate yield
-    // since it borrows a flash loan and repays it + interest. 
+    // since it borrows a flash loan and repays it + interest.
     let receiver = env.register_contract(None, FlashLoanReceiver);
     let receiver_client = FlashLoanReceiverClient::new(&env, &receiver);
     receiver_client.init(&user1, &token_id, &pool_addr);
@@ -75,7 +75,7 @@ fn withdraw_liquidity_with_yield_raw() {
     pool_client.initialize(&user1, &token_id);
 
     token_admin.mint(&user1, &(100 * STROOP as i128));
-    
+
     // user1 deposits 50 TOKEN into the pool.
     pool_client.deposit(&user1, &(50 * STROOP as i128));
     assert_eq!(token.balance(&user1), (50 * STROOP as i128));
@@ -84,13 +84,16 @@ fn withdraw_liquidity_with_yield_raw() {
     // Flash loan borrow occurs.
     // It generates yield which is held in the pool.
     pool_client.borrow(&receiver, &(50 * STROOP as i128));
-    
+
     // Expected 0.05% fee on the borrow.
     let expected_yield = 250_000;
 
     pool_client.withdraw(&user1, &(30 * STROOP as i128));
     assert_eq!(token.balance(&user1), (80 * STROOP as i128));
-    assert_eq!(token.balance(&pool_addr), (20 * STROOP as i128) + expected_yield);
+    assert_eq!(
+        token.balance(&pool_addr),
+        (20 * STROOP as i128) + expected_yield
+    );
 
     assert_eq!(pool_client.matured(&user1), expected_yield)
 }
@@ -117,7 +120,7 @@ fn yield_availability() {
 
     // Register, initialize and fund the receiver contract.
     // The receiver contract is needed to generate yield
-    // since it borrows a flash loan and repays it + interest. 
+    // since it borrows a flash loan and repays it + interest.
     let receiver = env.register_contract(None, FlashLoanReceiver);
     let receiver_client = FlashLoanReceiverClient::new(&env, &receiver);
     receiver_client.init(&user1, &token_id, &pool_addr);
@@ -128,7 +131,7 @@ fn yield_availability() {
 
     token_admin.mint(&user1, &(100 * STROOP as i128));
     token_admin.mint(&user2, &(100 * STROOP as i128));
-    
+
     // user1 deposits 50 TOKEN into the pool.
     pool_client.deposit(&user1, &(50 * STROOP as i128));
     assert_eq!(token.balance(&user1), (50 * STROOP as i128));
@@ -142,7 +145,7 @@ fn yield_availability() {
     // Flash loan borrow occurs.
     // It generates yield which is held in the pool.
     pool_client.borrow(&receiver, &(50 * STROOP as i128));
-    
+
     // Expected 0.05% fee on the borrow.
     let expected_yield = 250_000;
     let expected_yield_per_user = 125_000;
@@ -150,16 +153,17 @@ fn yield_availability() {
     pool_client.update_fee_rewards(&user1);
     pool_client.withdraw(&user1, &(50 * STROOP as i128));
     assert_eq!(token.balance(&user1), (100 * STROOP as i128));
-    assert_eq!(token.balance(&pool_addr), (50 * STROOP as i128) + expected_yield);
-    
+    assert_eq!(
+        token.balance(&pool_addr),
+        (50 * STROOP as i128) + expected_yield
+    );
+
     assert_eq!(pool_client.matured(&user1), expected_yield_per_user);
 
     // Flash loan borrow occurs.
     // It generates yield which is held in the pool.
     pool_client.borrow(&receiver, &(50 * STROOP as i128));
-    
 }
-
 
 #[contract]
 pub struct FlashLoanReceiver;
@@ -179,7 +183,8 @@ impl FlashLoanReceiver {
     pub fn exec_op(e: Env) {
         let token_client = token::Client::new(
             &e,
-            &e.storage().instance()
+            &e.storage()
+                .instance()
                 .get::<Symbol, Address>(&Symbol::short("T"))
                 .unwrap(),
         );
@@ -188,12 +193,12 @@ impl FlashLoanReceiver {
 
         token_client.approve(
             &e.current_contract_address(),
-            &e.storage().instance()
+            &e.storage()
+                .instance()
                 .get::<Symbol, Address>(&Symbol::short("FL"))
                 .unwrap(),
             &total_amount,
-            &(e.ledger().sequence() + 1)
+            &(e.ledger().sequence() + 1),
         );
-
     }
 }

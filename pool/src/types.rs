@@ -3,6 +3,7 @@ use soroban_sdk::{contracterror, contracttype, Address};
 #[derive(Clone)]
 #[contracttype]
 pub enum DataKey {
+    ProtocolFees,
     TokenId,
     Admin,
     TotSupply,

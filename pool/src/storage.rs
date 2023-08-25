@@ -1,4 +1,4 @@
-use soroban_sdk::{Address, Env, unwrap::UnwrapOptimized};
+use soroban_sdk::{Address, Env};
 
 use crate::types::{DataKey, Error};
 
@@ -12,30 +12,6 @@ pub(crate) fn get_tot_supply(e: &Env) -> i128 {
     e.storage().instance().get(&key).unwrap_or(0)
 }
 
-/*
-Currently deprecated functions
-
-pub(crate) fn write_total_deposited(e: &Env, amount: i128) {
-    let key = DataKey::TotalDeposited;
-    e.storage().set(&key, &amount);
-}
-
-pub(crate) fn read_total_deposited(e: &Env) -> i128 {
-    let key = DataKey::TotalDeposited;
-    e.storage().get(&key).unwrap_or(Ok(0)).unwrap()
-}
-
- */
-
-/*
-Probably deprecated-forever functions.
-Since release 0.2.0 xycLoans vaults don't require auth from the proxy anymore
-
-pub(crate) fn auth_admin(e: &Env) {
-    read_admin(e).require_auth();
-}
-*/
-
 pub(crate) fn write_balance(e: &Env, addr: Address, balance: i128) {
     let key = DataKey::Balance(addr);
     e.storage().persistent().set(&key, &balance);
@@ -47,7 +23,7 @@ pub(crate) fn read_balance(e: &Env, addr: Address) -> i128 {
 }
 
 // shouldn't be needed given state expiration
-pub(crate) fn remove_balance(e: &Env, addr: Address) {
+pub(crate) fn _remove_balance(e: &Env, addr: Address) {
     let key = DataKey::Balance(addr);
     e.storage().persistent().remove(&key)
 }
@@ -63,7 +39,7 @@ pub(crate) fn read_fee_per_share_particular(e: &Env, addr: Address) -> i128 {
 }
 
 // shouldn't be needed because of state expiration
-pub(crate) fn remove_fee_per_share_particular(e: &Env, addr: Address) {
+pub(crate) fn _remove_fee_per_share_particular(e: &Env, addr: Address) {
     let key = DataKey::FeePerShareParticular(addr);
     e.storage().persistent().remove(&key)
 }
@@ -79,7 +55,7 @@ pub(crate) fn read_matured_fees_particular(e: &Env, addr: Address) -> i128 {
 }
 
 // shouldn't be needed because of state expiration
-pub(crate) fn remove_matured_fees_particular(e: &Env, addr: Address) {
+pub(crate) fn _remove_matured_fees_particular(e: &Env, addr: Address) {
     let key = DataKey::MaturedFeesParticular(addr);
     e.storage().persistent().remove(&key)
 }
@@ -112,15 +88,27 @@ pub(crate) fn get_token_id(e: &Env) -> Result<Address, Error> {
     if let Some(token) = e.storage().instance().get(&key) {
         Ok(token)
     } else {
-        return Err(Error::NotInitialized)
+        return Err(Error::NotInitialized);
     }
 }
 
+/*
 
-// These functions do not currently serve any purpuse in the current implementation.
-// They probably will if governance doesn't happen within the contract
+ADMIN
 
-pub(crate) fn has_administrator(e: &Env) -> bool {
+Admin in xycLoans is xyclooLabs as development team.
+Admin cannot tamper or change the state of the pool contract,
+lender funds are entirely controlled by lenders and the pool
+contract workflow.
+Admin only can update the factory contract's pool wasm hashes
+to bring new updates on the protocol without changing the state
+of existing pools. Admin will provide with a non custodial
+interface for migrations if that should happen, and lenders
+are not required to migrate to the newest pool versions.
+
+*/
+
+pub(crate) fn _has_administrator(e: &Env) -> bool {
     let key = DataKey::Admin;
     e.storage().instance().has(&key)
 }
@@ -130,7 +118,18 @@ pub(crate) fn write_administrator(e: &Env, id: Address) {
     e.storage().instance().set(&key, &id);
 }
 
-pub(crate) fn read_admin(e: &Env) -> Address {
+pub(crate) fn _read_admin(e: &Env) -> Address {
     let key = DataKey::Admin;
     e.storage().instance().get(&key).unwrap()
+}
+
+pub(crate) fn _update_protocol_fees(env: &Env, fees: i128) {
+    env.storage().instance().set(&DataKey::ProtocolFees, &fees)
+}
+
+pub(crate) fn _read_protocol_fees(env: &Env) -> i128 {
+    env.storage()
+        .instance()
+        .get(&DataKey::ProtocolFees)
+        .unwrap_or(0)
 }

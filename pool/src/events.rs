@@ -1,14 +1,14 @@
-use soroban_sdk::{Address, Env, Symbol};
+use soroban_sdk::{symbol_short, Address, Env, Symbol};
 
-const XYCLOAN: Symbol = Symbol::short("XYCLOAN");
+const XYCLOAN: Symbol = symbol_short!("XYCLOAN");
 
 pub(crate) fn fees_deposited(env: &Env, amount: i128) {
-    let topics = (XYCLOAN, Symbol::new(env, "deposit_fees"));
+    let topics = (XYCLOAN, symbol_short!("dep_fees"));
     env.events().publish(topics, amount);
 }
 
 pub(crate) fn deposited(env: &Env, from: Address, amount: i128) {
-    let topics = (XYCLOAN, Symbol::short("deposit"));
+    let topics = (XYCLOAN, symbol_short!("deposit"));
     env.events().publish(topics, (from, amount));
 }
 
@@ -23,16 +23,16 @@ pub(crate) fn matured_updated(env: &Env, addr: Address) {
 }
 
 pub(crate) fn withdrawn(env: &Env, from: Address, amount: i128) {
-    let topics = (XYCLOAN, Symbol::short("withdraw"));
+    let topics = (XYCLOAN, symbol_short!("withdraw"));
     env.events().publish(topics, (from, amount));
 }
 
 pub(crate) fn loan_successful(env: &Env, receiver_contract: Address, amount: i128) {
-    let topics = (XYCLOAN, Symbol::short("borrow"));
+    let topics = (XYCLOAN, symbol_short!("borrow"));
     env.events().publish(topics, (receiver_contract, amount));
 }
 
 pub(crate) fn withdraw(env: &Env, amount: i128, to: Address) {
-    let topics = (XYCLOAN, Symbol::short("withdraw"));
+    let topics = (XYCLOAN, symbol_short!("withdraw"));
     env.events().publish(topics, (amount, to));
 }

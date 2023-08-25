@@ -1,12 +1,13 @@
 use crate::{
     balance::{burn_shares, mint_shares},
-    events, flash_loan,
-    rewards::{pay_matured, update_fee_per_share_universal, update_rewards},
+    events,
+    execution::invoke_receiver,
+    rewards::{pay_matured, update_rewards},
     storage::*,
     token_utility::{get_token_client, transfer, transfer_in_pool, try_repay},
-    types::Error, execution::invoke_receiver,
+    types::Error,
 };
-use soroban_sdk::{contract, contractimpl, Address, Env, token};
+use soroban_sdk::{contract, contractimpl, token, Address, Env};
 
 #[contract]
 pub struct Pool;
@@ -77,25 +78,21 @@ pub trait Initializable {
     /// `admin: Address` The vault's admin, effictively the pool's admin as the vault is the flash loan's admin. The admin is currently never used in release 0.2.0, but we are keeping it awaiting to see how the overall ecosystem revolves around governance.
     /// `token_id: Address` The pool's token.
     /// `flash_loan` The address of the associated flash loan contract. `flash_loan` should have `current_contract_address()` as `lp`.
-    fn initialize(
-        env: Env, 
-        admin: Address,
-        token: Address,
-    ) -> Result<(), Error>;
+    fn initialize(env: Env, admin: Address, token: Address) -> Result<(), Error>;
 }
 
 #[contractimpl]
 impl Initializable for Pool {
     fn initialize(
-        env: Env, 
+        env: Env,
         admin: Address, // TODO: decide if this needs to be removed
-        token: Address
+        token: Address,
     ) -> Result<(), Error> {
         if has_token_id(&env) {
             return Err(Error::AlreadyInitialized);
         }
 
-        write_administrator(&env, admin); // TODO: remove if admin deleted from v2
+        write_administrator(&env, admin.clone()); // TODO: remove if admin deleted from v2
 
         put_token_id(&env, token);
         Ok(())

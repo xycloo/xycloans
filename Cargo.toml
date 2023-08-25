@@ -10,9 +10,6 @@ members = [
     "pool"
 ]
 
-[workspace.package]
-version = "0.1.0"
-
 [profile.release-with-logs]
 inherits = "release"
 debug-assertions = true

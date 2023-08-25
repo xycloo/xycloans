@@ -1,17 +1,17 @@
-use soroban_sdk::{contractimpl, Address, BytesN, Env, contract};
+use soroban_sdk::{contract, contractimpl, Address, BytesN, Env};
 
 use crate::types::Error;
-use crate::{storage::*, pool};
+use crate::{pool, storage::*};
 
 #[contract]
 pub struct XycloansFactory;
 
 pub trait PluggableInterface {
     /// > This function is disabled by default, compile with --features pluggable to enable it.
-    /// 
+    ///
     /// Plugs in the protocol a vault contract for a certain token.
     /// Once both the vault and the associated flash loan are plugged in the proxy, there effictively is a new pool in the protocol.
-    /// 
+    ///
     /// [`set_vault()`] must be provided with:    /// [`set_vault()`] must be provided with:
     /// [`token_address: Address`] Address of the token used by the vault.
     /// [`pool_address: Address`] Address of the vault contract.
@@ -26,18 +26,10 @@ pub trait AdminInterface {
 
     /// The proxy's admin will only be able to plug in and out pools from the protocol
     /// without having any control over the deposited funds.
-    fn initialize(
-        env: Env,
-        admin: Address,
-        pool_hash: BytesN<32>,
-    ) -> Result<(), Error>;
+    fn initialize(env: Env, admin: Address, pool_hash: BytesN<32>) -> Result<(), Error>;
 
     /// Deploys a flash loan-vault pair and initializes them accordingly.
-    fn deploy_pair(
-        env: Env,
-        token_address: Address,
-        salt: BytesN<32>,
-    ) -> Result<(), Error>;
+    fn deploy_pair(env: Env, token_address: Address, salt: BytesN<32>) -> Result<(), Error>;
 }
 
 pub trait Common {
@@ -47,11 +39,7 @@ pub trait Common {
 
 #[contractimpl]
 impl AdminInterface for XycloansFactory {
-    fn initialize(
-        env: Env,
-        admin: Address,
-        pool_hash: BytesN<32>,
-    ) -> Result<(), Error> {
+    fn initialize(env: Env, admin: Address, pool_hash: BytesN<32>) -> Result<(), Error> {
         if has_admin(&env) {
             return Err(Error::AlreadyInitialized);
         }
@@ -62,27 +50,18 @@ impl AdminInterface for XycloansFactory {
         Ok(())
     }
 
-    fn deploy_pair(
-        env: Env,
-        token_address: Address,
-        salt: BytesN<32>,
-    ) -> Result<(), Error> {
+    fn deploy_pair(env: Env, token_address: Address, salt: BytesN<32>) -> Result<(), Error> {
         read_admin(&env)?.require_auth();
 
         let pool_address = env
             .deployer()
-            .with_address(
-                env.current_contract_address(), 
-                salt
-            ).deploy(read_pool_hash(&env));
+            .with_address(env.current_contract_address(), salt)
+            .deploy(read_pool_hash(&env));
 
         let pool = pool::Client::new(&env, &pool_address);
 
-        pool.initialize(
-            &read_admin(&env)?,
-            &token_address,
-        );
-        
+        pool.initialize(&read_admin(&env)?, &token_address);
+
         set_pool(&env, token_address, pool_address);
         Ok(())
     }

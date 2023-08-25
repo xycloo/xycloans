@@ -17,7 +17,7 @@ fn test_deployer() {
     let env: Env = Default::default();
     env.mock_all_auths();
     let pool_wasm_hash = env.deployer().upload_contract_wasm(pool::WASM);
-    
+
     let token_admin = Address::random(&env);
     let protocol = Address::random(&env);
 
@@ -27,15 +27,9 @@ fn test_deployer() {
     let factory_client = factory::Client::new(&env, &factory_id);
 
     factory_client.initialize(&protocol, &pool_wasm_hash);
-    factory_client.deploy_pair(
-        &token_address,
-        &BytesN::from_array(&env, &[0; 32])
-    );
+    factory_client.deploy_pair(&token_address, &BytesN::from_array(&env, &[0; 32]));
 
-    assert!(factory_client
-        .try_get_pool_address(&token_address)
-        .is_ok());
-
+    assert!(factory_client.try_get_pool_address(&token_address).is_ok());
 }
 
 /// Below we test that the factory contract initializes the pair with the correct parameters
@@ -45,7 +39,7 @@ fn test_deposit() {
     let env: Env = Default::default();
     env.mock_all_auths();
     let pool_wasm_hash = env.deployer().upload_contract_wasm(pool::WASM);
-    
+
     let token_admin = Address::random(&env);
     let protocol = Address::random(&env);
 
@@ -57,10 +51,7 @@ fn test_deposit() {
     let factory_client = factory::Client::new(&env, &factory_id);
 
     factory_client.initialize(&protocol, &pool_wasm_hash);
-    factory_client.deploy_pair(
-        &token_id,
-        &BytesN::from_array(&env, &[0; 32])
-    );
+    factory_client.deploy_pair(&token_id, &BytesN::from_array(&env, &[0; 32]));
 
     let user = Address::random(&env);
     let amount = 1000 * 10_i128.pow(7);
