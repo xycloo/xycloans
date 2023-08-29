@@ -182,10 +182,7 @@ impl FlashLoan for Pool {
     fn borrow(e: Env, receiver_id: Address, amount: i128) -> Result<(), Error> {
         bump_instance(&e);
         
-        // load the flash loan's token and build the client.
-        // get_token_id() checks that the pool is initialized.
-        let token_id: Address = get_token_id(&e)?;
-        let client = token::Client::new(&e, &token_id);
+        let client = get_token_client(&e);
 
         // transfer `amount` to `receiver_id`
         transfer(&e, &client, &receiver_id, &amount);
