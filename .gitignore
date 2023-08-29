@@ -1,2 +1,4 @@
 **/target
 .soroban
+deprecated
+.DS_Store
