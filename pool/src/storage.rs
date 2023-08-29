@@ -1,42 +1,54 @@
 use soroban_sdk::{Address, Env};
 
-use crate::types::{DataKey, Error};
+use crate::{types::{DataKey, Error}, INSTANCE_LEDGER_LIFE, PERSISTENT_LEDGER_LIFE};
 
 // User specific state.
 
 pub(crate) fn write_balance(e: &Env, addr: Address, balance: i128) {
     let key = DataKey::Balance(addr);
+    e.storage().persistent().bump(&key, PERSISTENT_LEDGER_LIFE);
     e.storage().persistent().set(&key, &balance);
 }
 
 pub(crate) fn read_balance(e: &Env, addr: Address) -> i128 {
     let key = DataKey::Balance(addr);
+    e.storage().persistent().bump(&key, PERSISTENT_LEDGER_LIFE);
     e.storage().persistent().get(&key).unwrap_or(0)
 }
 
 
 pub(crate) fn write_fee_per_share_particular(e: &Env, addr: Address, amount: i128) {
     let key = DataKey::FeePerShareParticular(addr);
+    e.storage().persistent().bump(&key, PERSISTENT_LEDGER_LIFE);
     e.storage().persistent().set(&key, &amount);
 }
 
 pub(crate) fn read_fee_per_share_particular(e: &Env, addr: Address) -> i128 {
     let key = DataKey::FeePerShareParticular(addr);
+    e.storage().persistent().bump(&key, PERSISTENT_LEDGER_LIFE);
     e.storage().persistent().get(&key).unwrap_or(0)
 }
 
 
 pub(crate) fn write_matured_fees_particular(e: &Env, addr: Address, amount: i128) {
     let key = DataKey::MaturedFeesParticular(addr);
+    e.storage().persistent().bump(&key, PERSISTENT_LEDGER_LIFE);
     e.storage().persistent().set(&key, &amount);
 }
 
 pub(crate) fn read_matured_fees_particular(e: &Env, addr: Address) -> i128 {
     let key = DataKey::MaturedFeesParticular(addr);
+    e.storage().persistent().bump(&key, PERSISTENT_LEDGER_LIFE);
     e.storage().persistent().get(&key).unwrap_or(0)
 }
 
 // INSTANCE
+
+// instance bumps are for every call on the contract and better controlled directly
+// within the exported function's block.
+pub(crate) fn bump_instance(env: &Env) {
+    env.storage().instance().bump(INSTANCE_LEDGER_LIFE);
+}
 
 pub(crate) fn put_tot_supply(e: &Env, supply: i128) {
     let key = DataKey::TotSupply;
