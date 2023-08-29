@@ -100,6 +100,8 @@ impl Vault for Pool {
     fn deposit(env: Env, from: Address, amount: i128) -> Result<(), Error> {
         from.require_auth();
 
+        bump_instance(&env);
+
         // we update the rewards before the deposit to avoid the abuse of the collected fees by withdrawing them with liquidity that didn't contribute to their generation.
         update_rewards(&env, from.clone());
 
@@ -120,6 +122,8 @@ impl Vault for Pool {
         // require lender auth for withdrawal
         addr.require_auth();
 
+        bump_instance(&e);
+
         // pay the matured yield
         pay_matured(&e, addr.clone())?;
 
@@ -128,6 +132,8 @@ impl Vault for Pool {
     }
 
     fn update_fee_rewards(e: Env, addr: Address) -> Result<(), Error> {
+        bump_instance(&e);
+
         update_rewards(&e, addr.clone());
 
         events::matured_updated(&e, addr);
@@ -137,6 +143,8 @@ impl Vault for Pool {
     fn withdraw(env: Env, addr: Address, amount: i128) -> Result<(), Error> {
         // require lender auth for withdrawal
         addr.require_auth();
+
+        bump_instance(&env);
 
         let addr_balance = read_balance(&env, addr.clone());
 
@@ -172,6 +180,8 @@ impl Vault for Pool {
 #[contractimpl]
 impl FlashLoan for Pool {
     fn borrow(e: Env, receiver_id: Address, amount: i128) -> Result<(), Error> {
+        bump_instance(&e);
+        
         // load the flash loan's token and build the client.
         // get_token_id() checks that the pool is initialized.
         let token_id: Address = get_token_id(&e)?;
