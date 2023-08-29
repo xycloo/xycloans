@@ -23,16 +23,11 @@ pub(crate) fn matured_updated(env: &Env, addr: Address) {
 }
 
 pub(crate) fn withdrawn(env: &Env, from: Address, amount: i128) {
-    let topics = (XYCLOAN, symbol_short!("withdraw"));
+    let topics = (XYCLOAN, symbol_short!("withdrawn"));
     env.events().publish(topics, (from, amount));
 }
 
 pub(crate) fn loan_successful(env: &Env, receiver_contract: Address, amount: i128) {
     let topics = (XYCLOAN, symbol_short!("borrow"));
     env.events().publish(topics, (receiver_contract, amount));
-}
-
-pub(crate) fn withdraw(env: &Env, amount: i128, to: Address) {
-    let topics = (XYCLOAN, symbol_short!("withdraw"));
-    env.events().publish(topics, (amount, to));
 }

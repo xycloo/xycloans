@@ -31,7 +31,7 @@ impl receiver_interface::Contract for FlashLoanReceiverContract {
         Perform all your operations here
         */
 
-        // Re-paying the loan + 0.05% interest
+        // Re-paying the loan + 0.08% interest
         let borrowed = e
             .storage()
             .get::<Symbol, i128>(&Symbol::short("A"))
