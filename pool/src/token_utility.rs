@@ -61,7 +61,7 @@ pub(crate) fn try_repay(
     // parameter since we inputted more money in the pool.
     update_fee_per_share_universal(&e, fees);
 
-    events::fees_deposited(&e, amount);
+    events::fees_deposited(&e, receiver_id, amount);
 
     Ok(())
 }

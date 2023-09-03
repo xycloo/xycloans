@@ -8,7 +8,7 @@ use crate::{
 };
 use soroban_sdk::{Address, Env};
 
-pub(crate) fn update_rewards(e: &Env, addr: Address) {
+pub(crate) fn update_rewards(e: &Env, addr: Address) -> i128 {
     let fee_per_share_universal = get_fee_per_share_universal(e);
     let lender_fees = compute_fee_earned(
         read_balance(e, addr.clone()),
@@ -20,6 +20,8 @@ pub(crate) fn update_rewards(e: &Env, addr: Address) {
     let mut matured = read_matured_fees_particular(e, addr.clone());
     matured.add_assign(lender_fees);
     write_matured_fees_particular(e, addr, matured);
+
+    matured
 }
 
 pub(crate) fn update_fee_per_share_universal(e: &Env, collected: i128) {
@@ -32,7 +34,7 @@ pub(crate) fn update_fee_per_share_universal(e: &Env, collected: i128) {
     put_fee_per_share_universal(e, adjusted_fee_per_share_universal);
 }
 
-pub(crate) fn pay_matured(e: &Env, addr: Address) -> Result<(), Error> {
+pub(crate) fn pay_matured(e: &Env, addr: Address) -> Result<i128, Error> {
     let token_client = get_token_client(e);
 
     // collect all the fees matured by the lender `addr`
@@ -46,5 +48,5 @@ pub(crate) fn pay_matured(e: &Env, addr: Address) -> Result<(), Error> {
     transfer(e, &token_client, &addr, &matured);
     write_matured_fees_particular(e, addr, 0);
 
-    Ok(())
+    Ok(matured)
 }

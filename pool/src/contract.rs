@@ -122,18 +122,18 @@ impl Vault for Pool {
         bump_instance(&e);
 
         // pay the matured yield
-        pay_matured(&e, addr.clone())?;
+        let paid = pay_matured(&e, addr.clone())?;
 
-        events::matured_withdrawn(&e, addr);
+        events::matured_withdrawn(&e, addr, paid);
         Ok(())
     }
 
     fn update_fee_rewards(e: Env, addr: Address) -> Result<(), Error> {
         bump_instance(&e);
 
-        update_rewards(&e, addr.clone());
+        let matured = update_rewards(&e, addr.clone());
 
-        events::matured_updated(&e, addr);
+        events::matured_updated(&e, addr, matured);
         Ok(())
     }
 
