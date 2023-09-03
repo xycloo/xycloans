@@ -1,6 +1,6 @@
+use crate::storage::{get_tot_supply, put_tot_supply, read_balance, write_balance};
 use core::ops::SubAssign;
 use soroban_sdk::{Address, Env};
-use crate::storage::{get_tot_supply, put_tot_supply, read_balance, write_balance};
 
 pub(crate) fn mint_shares(e: &Env, to: Address, shares: i128) {
     // add to total supply

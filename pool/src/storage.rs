@@ -1,6 +1,9 @@
 use soroban_sdk::{Address, Env};
 
-use crate::{types::{DataKey, Error}, INSTANCE_LEDGER_LIFE, PERSISTENT_LEDGER_LIFE};
+use crate::{
+    types::{DataKey, Error},
+    INSTANCE_LEDGER_LIFE, PERSISTENT_LEDGER_LIFE,
+};
 
 // User specific state.
 
@@ -16,7 +19,6 @@ pub(crate) fn read_balance(e: &Env, addr: Address) -> i128 {
     e.storage().persistent().get(&key).unwrap_or(0)
 }
 
-
 pub(crate) fn write_fee_per_share_particular(e: &Env, addr: Address, amount: i128) {
     let key = DataKey::FeePerShareParticular(addr);
     e.storage().persistent().bump(&key, PERSISTENT_LEDGER_LIFE);
@@ -28,7 +30,6 @@ pub(crate) fn read_fee_per_share_particular(e: &Env, addr: Address) -> i128 {
     e.storage().persistent().bump(&key, PERSISTENT_LEDGER_LIFE);
     e.storage().persistent().get(&key).unwrap_or(0)
 }
-
 
 pub(crate) fn write_matured_fees_particular(e: &Env, addr: Address, amount: i128) {
     let key = DataKey::MaturedFeesParticular(addr);

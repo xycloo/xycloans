@@ -82,10 +82,7 @@ pub trait Initializable {
 
 #[contractimpl]
 impl Initializable for Pool {
-    fn initialize(
-        env: Env,
-        token: Address,
-    ) -> Result<(), Error> {
+    fn initialize(env: Env, token: Address) -> Result<(), Error> {
         if has_token_id(&env) {
             return Err(Error::AlreadyInitialized);
         }
@@ -181,7 +178,7 @@ impl Vault for Pool {
 impl FlashLoan for Pool {
     fn borrow(e: Env, receiver_id: Address, amount: i128) -> Result<(), Error> {
         bump_instance(&e);
-        
+
         let client = get_token_client(&e);
 
         // transfer `amount` to `receiver_id`
