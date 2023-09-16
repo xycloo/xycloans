@@ -1,4 +1,4 @@
-use soroban_sdk::{symbol_short, Address, Env, Symbol};
+use soroban_sdk::{symbol_short, Address, Env};
 
 pub(crate) fn fees_deposited(env: &Env, from: &Address, amount: i128) {
     let topics = (symbol_short!("fee_dep"), from);

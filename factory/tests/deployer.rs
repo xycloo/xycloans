@@ -44,7 +44,7 @@ fn test_deposit() {
     let protocol = Address::random(&env);
 
     let token_id = env.register_stellar_asset_contract(token_admin);
-    let token_admin_client = token::AdminClient::new(&env, &token_id);
+    let token_admin_client = token::StellarAssetClient::new(&env, &token_id);
     let token = token::Client::new(&env, &token_id);
 
     let factory_id = env.register_contract_wasm(&None, factory::WASM);

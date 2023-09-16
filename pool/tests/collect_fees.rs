@@ -13,7 +13,7 @@ use soroban_sdk::{contract, contractimpl, testutils::Address as _, token, Addres
 #[test]
 fn collect_yield_raw() {
     let env: Env = Default::default();
-    env.mock_all_auths();
+    env.mock_all_auths_allowing_non_root_auth();
     env.budget().reset_unlimited();
 
     let admin1 = Address::random(&env);
@@ -21,7 +21,7 @@ fn collect_yield_raw() {
     let user1 = Address::random(&env);
 
     let token_id = env.register_stellar_asset_contract(admin1);
-    let token_admin = token::AdminClient::new(&env, &token_id);
+    let token_admin = token::StellarAssetClient::new(&env, &token_id);
     let token = token::Client::new(&env, &token_id);
 
     let pool_addr = env.register_contract_wasm(&None, pool::WASM);
@@ -32,7 +32,7 @@ fn collect_yield_raw() {
 
     // Initialize the flash loan receiver contract.
     receiver_client.init(&user1, &token_id, &pool_addr);
-    pool_client.initialize(&user1, &token_id);
+    pool_client.initialize(&token_id);
 
     token_admin.mint(&receiver, &(1000 * STROOP as i128));
     token_admin.mint(&user1, &(100 * STROOP as i128));
@@ -43,7 +43,7 @@ fn collect_yield_raw() {
     // Flash loan borrow occurs.
     // It generates yield which is held in the pool.
     pool_client.borrow(&receiver, &(100 * STROOP as i128));
-    let expected_yield = 500_000;
+    let expected_yield = 800_000;
 
     // Update fees and collect matured rewards for user 1
     pool_client.update_fee_rewards(&user1);
@@ -59,7 +59,7 @@ fn collect_yield_raw() {
 #[test]
 fn collect_yield_amounts() {
     let env: Env = Default::default();
-    env.mock_all_auths();
+    env.mock_all_auths_allowing_non_root_auth();
     env.budget().reset_unlimited();
 
     let admin1 = Address::random(&env);
@@ -70,7 +70,7 @@ fn collect_yield_amounts() {
     let user4 = Address::random(&env);
 
     let token_id = env.register_stellar_asset_contract(admin1);
-    let token_admin = token::AdminClient::new(&env, &token_id);
+    let token_admin = token::StellarAssetClient::new(&env, &token_id);
     let token = token::Client::new(&env, &token_id);
 
     let pool_addr = env.register_contract_wasm(&None, pool::WASM);
@@ -81,7 +81,7 @@ fn collect_yield_amounts() {
 
     // Initialize the flash loan receiver contract.
     receiver_client.init(&user1, &token_id, &pool_addr);
-    pool_client.initialize(&user1, &token_id);
+    pool_client.initialize(&token_id);
 
     token_admin.mint(&receiver, &(1000 * STROOP as i128));
     token_admin.mint(&user1, &(100 * STROOP as i128));
@@ -125,7 +125,7 @@ fn collect_yield_amounts() {
 #[test]
 fn yield_collect_sequence() {
     let env: Env = Default::default();
-    env.mock_all_auths();
+    env.mock_all_auths_allowing_non_root_auth();
     env.budget().reset_unlimited();
 
     let admin1 = Address::random(&env);
@@ -134,7 +134,7 @@ fn yield_collect_sequence() {
     let user2 = Address::random(&env);
 
     let token_id = env.register_stellar_asset_contract(admin1);
-    let token_admin = token::AdminClient::new(&env, &token_id);
+    let token_admin = token::StellarAssetClient::new(&env, &token_id);
     let token = token::Client::new(&env, &token_id);
 
     let pool_addr = env.register_contract_wasm(&None, pool::WASM);
@@ -145,7 +145,7 @@ fn yield_collect_sequence() {
 
     // Initialize the flash loan receiver contract.
     receiver_client.init(&user1, &token_id, &pool_addr);
-    pool_client.initialize(&user1, &token_id);
+    pool_client.initialize(&token_id);
 
     token_admin.mint(&receiver, &(1000 * STROOP as i128));
     token_admin.mint(&user1, &(100 * STROOP as i128));
@@ -162,7 +162,7 @@ fn yield_collect_sequence() {
     // It generates yield which is held in the pool.
     pool_client.borrow(&receiver, &(400 * STROOP as i128));
 
-    let expected_yield = 2_000_000;
+    let expected_yield = 3_200_000;
 
     // user1 should receive 1/4 of the total yield since it owns
     // 1/4 of the liquidity.
@@ -229,9 +229,9 @@ fn yield_collect_sequence() {
 pub struct FlashLoanReceiver;
 
 fn compute_fee(amount: &i128) -> i128 {
-    amount / 2000 // 0.05%, still TBD
+    amount / 1250 // 0.08%, still TBD
 }
-
+extern crate std;
 #[contractimpl]
 impl FlashLoanReceiver {
     pub fn init(env: Env, admin: Address, token: Address, fl_addr: Address) {
@@ -249,7 +249,8 @@ impl FlashLoanReceiver {
                 .unwrap(),
         );
 
-        let total_amount = (400 * STROOP as i128) + compute_fee(&(400 * STROOP as i128));
+        let total_amount = (400 * STROOP as i128) + compute_fee(&(400 * STROOP as i128)); // For simlicity we allow much more than we need sometimes. 
+                                                                                                        // This should not be applied for production flash loans.
 
         token_client.approve(
             &env.current_contract_address(),

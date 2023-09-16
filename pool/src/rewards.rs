@@ -1,5 +1,4 @@
 use core::ops::AddAssign;
-
 use crate::{
     math::{compute_fee_earned, compute_fee_per_share},
     storage::*,
@@ -16,6 +15,7 @@ pub(crate) fn update_rewards(e: &Env, addr: Address) -> i128 {
         read_fee_per_share_particular(e, addr.clone()),
     );
 
+    
     write_fee_per_share_particular(e, addr.clone(), fee_per_share_universal);
     let mut matured = read_matured_fees_particular(e, addr.clone());
     matured.add_assign(lender_fees);

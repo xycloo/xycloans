@@ -44,7 +44,6 @@ pub(crate) fn transfer_from_to_pool(
         Err(Error::LoanNotRepaid)
     }
 }
-
 pub(crate) fn try_repay(
     e: &Env,
     client: &token::Client,
