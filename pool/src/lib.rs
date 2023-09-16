@@ -1,6 +1,6 @@
 #![no_std]
 
-use fixed_point_math::{FixedPoint, STROOP};
+use fixed_point_math::FixedPoint;
 
 mod balance;
 pub mod contract;

@@ -1,8 +1,10 @@
-use fixed_point_math::{STROOP, FixedPoint};
+use fixed_point_math::{FixedPoint, STROOP};
 
 use crate::contract::{Pool, PoolClient};
 
-use soroban_sdk::{contract, contractimpl, testutils::Address as _, token, Address, Env, Symbol};
+use soroban_sdk::{
+    contract, contractimpl, symbol_short, testutils::Address as _, token, Address, Env, Symbol,
+};
 
 // Tests that an address that has deposited
 // liquidity into a pool which has later produced
@@ -61,8 +63,8 @@ extern crate std;
 impl FlashLoanReceiver {
     pub fn init(env: Env, admin: Address, token: Address, fl_addr: Address) {
         admin.require_auth();
-        env.storage().instance().set(&Symbol::short("T"), &token);
-        env.storage().instance().set(&Symbol::short("FL"), &fl_addr);
+        env.storage().instance().set(&symbol_short!("T"), &token);
+        env.storage().instance().set(&symbol_short!("FL"), &fl_addr);
     }
 
     pub fn exec_op(env: Env) {
@@ -70,7 +72,7 @@ impl FlashLoanReceiver {
             &env,
             &env.storage()
                 .instance()
-                .get::<Symbol, Address>(&Symbol::short("T"))
+                .get::<Symbol, Address>(&symbol_short!("T"))
                 .unwrap(),
         );
 
@@ -80,7 +82,7 @@ impl FlashLoanReceiver {
             &env.current_contract_address(),
             &env.storage()
                 .instance()
-                .get::<Symbol, Address>(&Symbol::short("FL"))
+                .get::<Symbol, Address>(&symbol_short!("FL"))
                 .unwrap(),
             &total_amount,
             &(env.ledger().sequence() + 1),

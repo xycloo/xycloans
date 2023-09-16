@@ -9,7 +9,9 @@ mod pool {
 }
 
 use fixed_point_math::STROOP;
-use soroban_sdk::{contract, contractimpl, testutils::Address as _, token, Address, Env, Symbol};
+use soroban_sdk::{
+    contract, contractimpl, symbol_short, testutils::Address as _, token, Address, Env, Symbol,
+};
 
 // Only tests the barebones liquidity withdrawal functionality.
 #[test]
@@ -176,8 +178,8 @@ fn compute_fee(amount: &i128) -> i128 {
 impl FlashLoanReceiver {
     pub fn init(e: Env, admin: Address, token: Address, fl_addr: Address) {
         admin.require_auth();
-        e.storage().instance().set(&Symbol::short("T"), &token);
-        e.storage().instance().set(&Symbol::short("FL"), &fl_addr);
+        e.storage().instance().set(&symbol_short!("T"), &token);
+        e.storage().instance().set(&symbol_short!("FL"), &fl_addr);
     }
 
     pub fn exec_op(e: Env) {
@@ -185,7 +187,7 @@ impl FlashLoanReceiver {
             &e,
             &e.storage()
                 .instance()
-                .get::<Symbol, Address>(&Symbol::short("T"))
+                .get::<Symbol, Address>(&symbol_short!("T"))
                 .unwrap(),
         );
 
@@ -195,7 +197,7 @@ impl FlashLoanReceiver {
             &e.current_contract_address(),
             &e.storage()
                 .instance()
-                .get::<Symbol, Address>(&Symbol::short("FL"))
+                .get::<Symbol, Address>(&symbol_short!("FL"))
                 .unwrap(),
             &total_amount,
             &(e.ledger().sequence() + 1),

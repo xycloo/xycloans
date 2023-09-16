@@ -1,6 +1,6 @@
 #![no_std]
 use receiver_interface::{Contract, ReceiverError};
-use soroban_sdk::{contractimpl, Address, BytesN, Env, Symbol};
+use soroban_sdk::{contractimpl, Address, BytesN, Env, Symbol, symbol_short};
 
 mod token {
     soroban_sdk::contractimport!(file = "../../soroban_token_spec.wasm");

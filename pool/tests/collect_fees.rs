@@ -5,7 +5,9 @@ mod pool {
     contractimport!(file = "../target/wasm32-unknown-unknown/release/xycloans_pool.wasm");
 }
 
-use soroban_sdk::{contract, contractimpl, testutils::Address as _, token, Address, Env, Symbol};
+use soroban_sdk::{
+    contract, contractimpl, symbol_short, testutils::Address as _, token, Address, Env, Symbol,
+};
 
 // Tests that an address that has deposited
 // liquidity into a pool which has later produced
@@ -101,7 +103,6 @@ fn collect_yield_amounts() {
     for _ in 0..20 {
         pool_client.borrow(&receiver, &(100 * STROOP as i128));
     }
-    let expected_yield = 10_000_000;
 
     // Update fees and collect matured rewards for the users
     pool_client.update_fee_rewards(&user1);
@@ -236,8 +237,8 @@ extern crate std;
 impl FlashLoanReceiver {
     pub fn init(env: Env, admin: Address, token: Address, fl_addr: Address) {
         admin.require_auth();
-        env.storage().instance().set(&Symbol::short("T"), &token);
-        env.storage().instance().set(&Symbol::short("FL"), &fl_addr);
+        env.storage().instance().set(&symbol_short!("T"), &token);
+        env.storage().instance().set(&symbol_short!("FL"), &fl_addr);
     }
 
     pub fn exec_op(env: Env) {
@@ -245,18 +246,18 @@ impl FlashLoanReceiver {
             &env,
             &env.storage()
                 .instance()
-                .get::<Symbol, Address>(&Symbol::short("T"))
+                .get::<Symbol, Address>(&symbol_short!("T"))
                 .unwrap(),
         );
 
-        let total_amount = (400 * STROOP as i128) + compute_fee(&(400 * STROOP as i128)); // For simlicity we allow much more than we need sometimes. 
-                                                                                                        // This should not be applied for production flash loans.
+        let total_amount = (400 * STROOP as i128) + compute_fee(&(400 * STROOP as i128)); // For simlicity we allow much more than we need sometimes.
+                                                                                          // This should not be applied for production flash loans.
 
         token_client.approve(
             &env.current_contract_address(),
             &env.storage()
                 .instance()
-                .get::<Symbol, Address>(&Symbol::short("FL"))
+                .get::<Symbol, Address>(&symbol_short!("FL"))
                 .unwrap(),
             &total_amount,
             &(env.ledger().sequence() + 1),

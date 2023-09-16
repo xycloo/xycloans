@@ -60,7 +60,7 @@ impl AdminInterface for XycloansFactory {
 
         let pool = pool::Client::new(&env, &pool_address);
 
-        pool.initialize(&read_admin(&env)?, &token_address);
+        pool.initialize(&token_address);
 
         set_pool(&env, token_address, pool_address);
         Ok(())

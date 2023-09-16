@@ -34,4 +34,3 @@ fn deposit() {
     assert_eq!(token.balance(&user1), 0);
     assert_eq!(token.balance(&pool_addr), 1000000000);
 }
-
