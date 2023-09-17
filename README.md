@@ -1,6 +1,3 @@
-[![Stargazers][stars-shield]][stars-url]
-[![Contributors][contributors-shield]][contributors-url]
-
 <br />
 <div align="center">
   <a href="https://xycloo.com/">
