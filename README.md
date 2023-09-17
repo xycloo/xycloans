@@ -1,13 +1,38 @@
-# xycLoans Protocol
-### Flash loans and liquidity protocol on Soroban with 0 fees
+[![Stargazers][stars-shield]][stars-url]
+[![Contributors][contributors-shield]][contributors-url]
 
-XycLoans is a flash loans protocol implemented for the Soroban Virtual Machine. 
-The protocol manages its liquidity through its vaults, where lenders provide liquidity in exchange of yield generated from flash loan fees.
+<br />
+<div align="center">
+  <a href="https://xycloo.com/">
+    <img src="./assets/logo.png" alt="Logo" width="80" height="80">
+  </a>
 
-With xycLoans, contracts will be able to flash loan any available amount of liquidity as long as they repay it within the same transaction. 
+  <h3 align="center">XycLoans Protocol</h3>
 
+  <p align="center">
+    Flash loans and liquidity protocol on the Soroban VM.
+    <br />
+    <br />
+    Brought to the Soroban ecosystem by <a href="https://github.com/othneildrew/Best-README-Template"><strong>xyclooLabs</strong></a>.
+    
+  </p>
+</div>
+
+
+XycLoans is a flash loans protocol implemented for the Soroban Virtual Machine.
+The protocol, besides offering an efficient and cheap way of borrowing flash loans, also offers investors to safely provide liquidity and earn yield. 
+
+# How to use
+
+To get started trying out xycLoans, check out the [examples](./examples/).
 
 # Why choose xycLoans
+
+Below are some reasons why you might want to choose xycLoans, both as a trader/developer and as an investor. 
+
+## Efficiency
+
+Our team has been working with soroban since its first early release, and we've optimized the contracts and logics for Soroban release adapting to Soroban's principles and strength.
 
 ## Security
 
@@ -30,4 +55,3 @@ We have two main sources to keep the protocol running:
 - [discord server](https://discord.com/invite/w7fBhSS34Q)
 - [twitter](https://twitter.com/xyclooLabs)
 - [stellar community fund #12 winner](https://communityfund.stellar.org/projects/xycloans-scf-12)
-- [presentation video](https://www.youtube.com/watch?v=PUtyb2EE4e0)
