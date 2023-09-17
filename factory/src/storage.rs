@@ -18,7 +18,7 @@ pub(crate) fn has_admin(env: &Env) -> bool {
     env.storage().instance().has(&DataKey::Admin)
 }
 
-pub(crate) fn set_pool(env: &Env, token_address: Address, pool_address: Address) {
+pub(crate) fn set_pool(env: &Env, token_address: Address, pool_address: &Address) {
     let key = &DataKey::Pool(token_address);
     env.storage().persistent().set(key, &pool_address);
 }

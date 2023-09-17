@@ -949,6 +949,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "simple"
+version = "1.0.0"
+dependencies = [
+ "soroban-sdk",
+]
+
+[[package]]
 name = "smallvec"
 version = "1.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
