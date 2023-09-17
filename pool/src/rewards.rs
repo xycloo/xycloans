@@ -1,11 +1,10 @@
-use core::ops::AddAssign;
-
 use crate::{
     math::{compute_fee_earned, compute_fee_per_share},
     storage::*,
     token_utility::{get_token_client, transfer},
     types::Error,
 };
+use core::ops::AddAssign;
 use soroban_sdk::{Address, Env};
 
 pub(crate) fn update_rewards(e: &Env, addr: Address) -> i128 {

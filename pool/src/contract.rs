@@ -7,7 +7,7 @@ use crate::{
     token_utility::{get_token_client, transfer, transfer_in_pool, try_repay},
     types::Error,
 };
-use soroban_sdk::{contract, contractimpl, token, Address, Env};
+use soroban_sdk::{contract, contractimpl, Address, Env};
 
 #[contract]
 pub struct Pool;
