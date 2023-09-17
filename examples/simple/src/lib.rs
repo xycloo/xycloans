@@ -1,5 +1,5 @@
 #![no_std]
-use soroban_sdk::{contractimpl, contracttype, contracterror, token, Address, Env, contract};
+use soroban_sdk::{contract, contracterror, contractimpl, contracttype, token, Address, Env};
 
 #[contracterror]
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -8,7 +8,6 @@ pub enum ReceiverError {
     InitFailed = 1,
     NotInitialized = 2,
 }
-
 
 #[doc = "Standard interface for FlashLoan receivers. Implementing `exec_op` is mandatory, but you can also extend the contract for better developer experience, for example, having an `init` function to store all the values instead of hard-coding them could be a good idea."]
 pub trait FlashLoanReceiver {
@@ -20,7 +19,7 @@ pub trait FlashLoanReceiver {
 pub enum DataKey {
     Token,
     Amount,
-    PoolAddress
+    PoolAddress,
 }
 
 #[contract]
@@ -33,11 +32,13 @@ fn compute_fee(amount: &i128) -> i128 {
 #[contractimpl]
 impl FlashLoanReceiver for FlashLoanReceiverContract {
     fn exec_op(e: Env) -> Result<(), ReceiverError> {
-        let token_client = if let Some(token) = &e.storage().instance().get::<DataKey, Address>(&DataKey::Token) {
-            token::Client::new(
-            &e,
-            &token
-        )} else {
+        let token_client = if let Some(token) = &e
+            .storage()
+            .instance()
+            .get::<DataKey, Address>(&DataKey::Token)
+        {
+            token::Client::new(&e, &token)
+        } else {
             return Err(ReceiverError::NotInitialized);
         };
 
@@ -46,16 +47,21 @@ impl FlashLoanReceiver for FlashLoanReceiverContract {
             .instance()
             .get::<DataKey, i128>(&DataKey::Amount)
             .unwrap();
-        
-        
+
         let total_amount = borrowed + compute_fee(&borrowed);
 
-        let flash_loan = e.storage()
+        let flash_loan = e
+            .storage()
             .instance()
             .get::<DataKey, Address>(&DataKey::PoolAddress)
             .unwrap();
 
-        token_client.approve(&e.current_contract_address(), &flash_loan, &total_amount, &(e.ledger().sequence() + 1));
+        token_client.approve(
+            &e.current_contract_address(),
+            &flash_loan,
+            &total_amount,
+            &(e.ledger().sequence() + 1),
+        );
 
         Ok(())
     }
@@ -70,9 +76,14 @@ impl FlashLoanReceiverContract {
         amount: i128,
     ) -> Result<(), ReceiverError> {
         e.storage().instance().set(&DataKey::Token, &token_id);
-        e.storage().instance().set(&DataKey::PoolAddress, &fl_address);
+        e.storage()
+            .instance()
+            .set(&DataKey::PoolAddress, &fl_address);
         e.storage().instance().set(&DataKey::Amount, &amount);
-        
+
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod test;
