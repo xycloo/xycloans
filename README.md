@@ -55,3 +55,7 @@ We have two main sources to keep the protocol running:
 - [discord server](https://discord.com/invite/w7fBhSS34Q)
 - [twitter](https://twitter.com/xyclooLabs)
 - [stellar community fund #12 winner](https://communityfund.stellar.org/projects/xycloans-scf-12)
+
+
+[stars-url]: https://github.com/xycloo/xycloans/stargazers
+[contributors-url]: https://github.com/xycloo/xycloans/graphs/contributors
