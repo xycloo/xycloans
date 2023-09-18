@@ -2,3 +2,4 @@
 .soroban
 deprecated
 .DS_Store
+Cargo.lock

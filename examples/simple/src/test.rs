@@ -17,7 +17,7 @@ use crate::{FlashLoanReceiverContract, FlashLoanReceiverContractClient};
 #[test]
 fn collect_yield_raw() {
     let env: Env = Default::default();
-    env.mock_all_auths_allowing_non_root_auth();
+    env.mock_all_auths();
     env.budget().reset_unlimited();
 
     let admin1 = Address::random(&env);
