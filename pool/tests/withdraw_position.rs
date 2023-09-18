@@ -17,7 +17,7 @@ use soroban_sdk::{
 #[test]
 fn withdraw_liquidity_raw() {
     let env: Env = Default::default();
-    env.mock_all_auths_allowing_non_root_auth();
+    env.mock_all_auths();
     env.budget().reset_unlimited();
 
     let admin1 = Address::random(&env);
@@ -52,7 +52,7 @@ fn withdraw_liquidity_raw() {
 #[test]
 fn withdraw_liquidity_with_yield_raw() {
     let env: Env = Default::default();
-    env.mock_all_auths_allowing_non_root_auth();
+    env.mock_all_auths();
     env.budget().reset_unlimited();
 
     let admin1 = Address::random(&env);
@@ -106,7 +106,7 @@ fn withdraw_liquidity_with_yield_raw() {
 #[test]
 fn yield_availability() {
     let env: Env = Default::default();
-    env.mock_all_auths_allowing_non_root_auth();
+    env.mock_all_auths();
     env.budget().reset_unlimited();
 
     let admin1 = Address::random(&env);

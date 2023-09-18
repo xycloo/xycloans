@@ -9,7 +9,7 @@ use soroban_sdk::{testutils::Address as _, token, Address, Env};
 #[test]
 fn deposit() {
     let e: Env = Default::default();
-    e.mock_all_auths_allowing_non_root_auth();
+    e.mock_all_auths();
 
     let admin1 = Address::random(&e);
 

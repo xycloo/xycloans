@@ -15,7 +15,7 @@ use soroban_sdk::{
 #[test]
 fn collect_yield_raw() {
     let env: Env = Default::default();
-    env.mock_all_auths_allowing_non_root_auth();
+    env.mock_all_auths();
     env.budget().reset_unlimited();
 
     let admin1 = Address::random(&env);
@@ -61,7 +61,7 @@ fn collect_yield_raw() {
 #[test]
 fn collect_yield_amounts() {
     let env: Env = Default::default();
-    env.mock_all_auths_allowing_non_root_auth();
+    env.mock_all_auths();
     env.budget().reset_unlimited();
 
     let admin1 = Address::random(&env);
@@ -126,7 +126,7 @@ fn collect_yield_amounts() {
 #[test]
 fn yield_collect_sequence() {
     let env: Env = Default::default();
-    env.mock_all_auths_allowing_non_root_auth();
+    env.mock_all_auths();
     env.budget().reset_unlimited();
 
     let admin1 = Address::random(&env);
