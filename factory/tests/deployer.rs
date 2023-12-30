@@ -18,8 +18,8 @@ fn test_deployer() {
     env.mock_all_auths();
     let pool_wasm_hash = env.deployer().upload_contract_wasm(pool::WASM);
 
-    let token_admin = Address::random(&env);
-    let protocol = Address::random(&env);
+    let token_admin = Address::generate(&env);
+    let protocol = Address::generate(&env);
 
     let token_address = env.register_stellar_asset_contract(token_admin);
 
@@ -40,8 +40,8 @@ fn test_deposit() {
     env.mock_all_auths();
     let pool_wasm_hash = env.deployer().upload_contract_wasm(pool::WASM);
 
-    let token_admin = Address::random(&env);
-    let protocol = Address::random(&env);
+    let token_admin = Address::generate(&env);
+    let protocol = Address::generate(&env);
 
     let token_id = env.register_stellar_asset_contract(token_admin);
     let token_admin_client = token::StellarAssetClient::new(&env, &token_id);
@@ -53,7 +53,7 @@ fn test_deposit() {
     factory_client.initialize(&protocol, &pool_wasm_hash);
     factory_client.deploy_pair(&token_id, &BytesN::from_array(&env, &[0; 32]));
 
-    let user = Address::random(&env);
+    let user = Address::generate(&env);
     let amount = 1000 * 10_i128.pow(7);
 
     token_admin_client.mint(&user, &amount);

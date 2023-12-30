@@ -20,8 +20,8 @@ fn withdraw_liquidity_raw() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let admin1 = Address::random(&env);
-    let user1 = Address::random(&env);
+    let admin1 = Address::generate(&env);
+    let user1 = Address::generate(&env);
 
     let token_id = env.register_stellar_asset_contract(admin1);
     let token_admin = token::StellarAssetClient::new(&env, &token_id);
@@ -55,8 +55,8 @@ fn withdraw_liquidity_with_yield_raw() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let admin1 = Address::random(&env);
-    let user1 = Address::random(&env);
+    let admin1 = Address::generate(&env);
+    let user1 = Address::generate(&env);
 
     let token_id = env.register_stellar_asset_contract(admin1);
     let token_admin = token::StellarAssetClient::new(&env, &token_id);
@@ -109,9 +109,9 @@ fn yield_availability() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let admin1 = Address::random(&env);
-    let user1 = Address::random(&env);
-    let user2 = Address::random(&env);
+    let admin1 = Address::generate(&env);
+    let user1 = Address::generate(&env);
+    let user2 = Address::generate(&env);
 
     let token_id = env.register_stellar_asset_contract(admin1);
     let token_admin = token::StellarAssetClient::new(&env, &token_id);

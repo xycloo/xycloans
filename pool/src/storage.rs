@@ -2,26 +2,28 @@ use soroban_sdk::{Address, Env};
 
 use crate::{
     types::{DataKey, Error},
-    INSTANCE_LEDGER_LIFE, PERSISTENT_LEDGER_LIFE,
+    INSTANCE_LEDGER_LIFE, PERSISTENT_LEDGER_LIFE, PERSISTENT_LEDGER_TTL_THRESHOLD, INSTANCE_LEDGER_TTL_THRESHOLD,
 };
 
 // User specific state.
 
+pub(crate) fn bump_persistent(e: &Env, key: &DataKey) {
+    e.storage()
+        .persistent()
+        .extend_ttl(key, PERSISTENT_LEDGER_TTL_THRESHOLD, PERSISTENT_LEDGER_LIFE);
+}
+
 pub(crate) fn write_balance(e: &Env, addr: Address, balance: i128) {
     let key = DataKey::Balance(addr);
     e.storage().persistent().set(&key, &balance);
-    e.storage()
-        .persistent()
-        .bump(&key, PERSISTENT_LEDGER_LIFE, PERSISTENT_LEDGER_LIFE);
+    bump_persistent(e, &key);
 }
 
 pub(crate) fn read_balance(e: &Env, addr: Address) -> i128 {
     let key = DataKey::Balance(addr);
 
     if let Some(balance) = e.storage().persistent().get(&key) {
-        e.storage()
-            .persistent()
-            .bump(&key, PERSISTENT_LEDGER_LIFE, PERSISTENT_LEDGER_LIFE);
+        bump_persistent(e, &key);
         balance
     } else {
         0
@@ -31,18 +33,14 @@ pub(crate) fn read_balance(e: &Env, addr: Address) -> i128 {
 pub(crate) fn write_fee_per_share_particular(e: &Env, addr: Address, amount: i128) {
     let key = DataKey::FeePerShareParticular(addr);
     e.storage().persistent().set(&key, &amount);
-    e.storage()
-        .persistent()
-        .bump(&key, PERSISTENT_LEDGER_LIFE, PERSISTENT_LEDGER_LIFE);
+    bump_persistent(e, &key);
 }
 
 pub(crate) fn read_fee_per_share_particular(e: &Env, addr: Address) -> i128 {
     let key = DataKey::FeePerShareParticular(addr);
 
     if let Some(particular) = e.storage().persistent().get(&key) {
-        e.storage()
-            .persistent()
-            .bump(&key, PERSISTENT_LEDGER_LIFE, PERSISTENT_LEDGER_LIFE);
+        bump_persistent(e, &key);
         particular
     } else {
         0
@@ -52,18 +50,14 @@ pub(crate) fn read_fee_per_share_particular(e: &Env, addr: Address) -> i128 {
 pub(crate) fn write_matured_fees_particular(e: &Env, addr: Address, amount: i128) {
     let key = DataKey::MaturedFeesParticular(addr);
     e.storage().persistent().set(&key, &amount);
-    e.storage()
-        .persistent()
-        .bump(&key, PERSISTENT_LEDGER_LIFE, PERSISTENT_LEDGER_LIFE);
+    bump_persistent(e, &key);
 }
 
 pub(crate) fn read_matured_fees_particular(e: &Env, addr: Address) -> i128 {
     let key = DataKey::MaturedFeesParticular(addr);
 
     if let Some(matured) = e.storage().persistent().get(&key) {
-        e.storage()
-            .persistent()
-            .bump(&key, PERSISTENT_LEDGER_LIFE, PERSISTENT_LEDGER_LIFE);
+        bump_persistent(e, &key);
         matured
     } else {
         0
@@ -77,7 +71,7 @@ pub(crate) fn read_matured_fees_particular(e: &Env, addr: Address) -> i128 {
 pub(crate) fn bump_instance(env: &Env) {
     env.storage()
         .instance()
-        .bump(INSTANCE_LEDGER_LIFE, PERSISTENT_LEDGER_LIFE);
+        .extend_ttl(INSTANCE_LEDGER_TTL_THRESHOLD, INSTANCE_LEDGER_LIFE);
 }
 
 pub(crate) fn put_tot_supply(e: &Env, supply: i128) {

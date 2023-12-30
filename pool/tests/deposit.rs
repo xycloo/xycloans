@@ -11,11 +11,11 @@ fn deposit() {
     let e: Env = Default::default();
     e.mock_all_auths();
 
-    let admin1 = Address::random(&e);
+    let admin1 = Address::generate(&e);
 
-    let user1 = Address::random(&e);
-    let user2 = Address::random(&e);
-    let user3 = Address::random(&e);
+    let user1 = Address::generate(&e);
+    let user2 = Address::generate(&e);
+    let user3 = Address::generate(&e);
 
     let token_id = e.register_stellar_asset_contract(admin1);
     let token_admin = token::StellarAssetClient::new(&e, &token_id);
