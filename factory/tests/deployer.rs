@@ -27,7 +27,7 @@ fn test_deployer() {
     let factory_client = factory::Client::new(&env, &factory_id);
 
     factory_client.initialize(&protocol, &pool_wasm_hash);
-    factory_client.deploy_pair(&token_address, &BytesN::from_array(&env, &[0; 32]));
+    factory_client.deploy_pool(&token_address, &BytesN::from_array(&env, &[0; 32]));
 
     assert!(factory_client.try_get_pool_address(&token_address).is_ok());
 }
@@ -51,7 +51,7 @@ fn test_deposit() {
     let factory_client = factory::Client::new(&env, &factory_id);
 
     factory_client.initialize(&protocol, &pool_wasm_hash);
-    factory_client.deploy_pair(&token_id, &BytesN::from_array(&env, &[0; 32]));
+    factory_client.deploy_pool(&token_id, &BytesN::from_array(&env, &[0; 32]));
 
     let user = Address::generate(&env);
     let amount = 1000 * 10_i128.pow(7);

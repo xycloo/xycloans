@@ -1,7 +1,7 @@
 use soroban_sdk::{contract, contractimpl, Address, BytesN, Env};
 
-use crate::types::Error;
-use crate::{pool, storage::*};
+use crate::types::{Error, DataKey};
+use crate::{pool, storage::*, events};
 
 #[contract]
 pub struct XycloansFactory;
@@ -29,7 +29,7 @@ pub trait AdminInterface {
     fn initialize(env: Env, admin: Address, pool_hash: BytesN<32>) -> Result<(), Error>;
 
     /// Deploys a flash loan-vault pair and initializes them accordingly.
-    fn deploy_pair(env: Env, token_address: Address, salt: BytesN<32>) -> Result<Address, Error>;
+    fn deploy_pool(env: Env, token_address: Address, salt: BytesN<32>) -> Result<Address, Error>;
 }
 
 pub trait Common {
@@ -50,8 +50,13 @@ impl AdminInterface for XycloansFactory {
         Ok(())
     }
 
-    fn deploy_pair(env: Env, token_address: Address, salt: BytesN<32>) -> Result<Address, Error> {
+    fn deploy_pool(env: Env, token_address: Address, salt: BytesN<32>) -> Result<Address, Error> {
         read_admin(&env)?.require_auth();
+
+        let key = &DataKey::Pool(token_address.clone());
+        if env.storage().persistent().has(key) {
+            return Err(Error::PoolExists)
+        }
 
         let pool_address = env
             .deployer()
@@ -59,10 +64,11 @@ impl AdminInterface for XycloansFactory {
             .deploy(read_pool_hash(&env));
 
         let pool = pool::Client::new(&env, &pool_address);
-
         pool.initialize(&token_address);
 
         set_pool(&env, token_address, &pool_address);
+        events::deployed_pool(&env, &pool_address);
+
         Ok(pool_address)
     }
 }
