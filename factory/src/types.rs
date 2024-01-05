@@ -15,6 +15,6 @@ pub enum Error {
     AlreadyInitialized = 0,
     NotInitialized = 1,
     NotAdmin = 2,
-    VaultDoesntExist = 3,
-    FlashLoanDoesntExist = 4,
+    PoolExists = 3,
+    NoPool = 4
 }

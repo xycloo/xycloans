@@ -3,6 +3,7 @@
 mod contract;
 mod storage;
 mod types;
+mod events;
 
 mod pool {
     use soroban_sdk::contractimport;
