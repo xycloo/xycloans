@@ -226,6 +226,104 @@ fn yield_collect_sequence() {
     );
 }
 
+/// This test by @OtterSec catches the math function `compute_fee_earned` incorrectly
+/// handling the computation by ceiling the multiplication.
+/// 
+/// The mul_ceil was introduced during the testing of the math function and
+/// mistakenly left as is, allowing a large set of attackers with small deposits
+/// to drain a pool. 
+/// 
+/// This is now fixed.
+#[test]
+fn test_drain_pool() {
+    const ATTACKER_DEPOSIT: i128 = 1;
+    const NUM_ATTACKERS: usize = 801;
+    const NUM_BORROWS: usize = 1;
+    const VICTIM_DEPOSIT: i128 = 100 * STROOP as i128; // - (ATTACKER_DEPOSIT * NUM_ATTACKERS as i128);
+
+    let env: Env = Default::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin1 = Address::generate(&env);
+
+    let victim = Address::generate(&env);
+    let attackers: std::vec::Vec<Address> = (0..NUM_ATTACKERS).map(|_| Address::generate(&env)).collect();
+
+    let token_id = env.register_stellar_asset_contract(admin1);
+    let token_admin = token::StellarAssetClient::new(&env, &token_id);
+    let token = token::Client::new(&env, &token_id);
+
+    let pool_addr = env.register_contract_wasm(&None, pool::WASM);
+    let pool_client = pool::Client::new(&env, &pool_addr);
+
+    let receiver = env.register_contract(None, FlashLoanReceiver);
+    let receiver_client = FlashLoanReceiverClient::new(&env, &receiver);
+
+    // Initialize the flash loan receiver contract.
+    receiver_client.init(&victim, &token_id, &pool_addr);
+    pool_client.initialize(&token_id);
+
+    // Mint funds
+    token_admin.mint(&receiver, &(1_000 * STROOP as i128));
+    token_admin.mint(&victim, &VICTIM_DEPOSIT);
+    for attacker in attackers.iter() {
+        token_admin.mint(attacker, &ATTACKER_DEPOSIT);
+    }
+
+    // Victim and attacker deposits into the pool.
+    pool_client.deposit(&victim, &VICTIM_DEPOSIT);
+    for attacker in attackers.iter() {
+        pool_client.deposit(attacker, &ATTACKER_DEPOSIT);
+    }
+
+    // Flash loans occur, attacker is always able to withdraw 1 share of yield
+    let mut total_attacker_matured: i128 = 0;
+    for _ in 0..NUM_BORROWS {
+        pool_client.borrow(&receiver, &(1_000_000 as i128));
+        
+        for attacker in attackers.iter() {
+            pool_client.update_fee_rewards(&attacker);
+            let matured = pool_client.matured(attacker);
+            if matured > 0 {
+                total_attacker_matured += matured;
+                let _ = pool_client.try_withdraw_matured(attacker).unwrap();
+            }
+        }
+    }
+
+    // Attacker also withdraws his deposit
+    for attacker in attackers.iter() {
+        pool_client.withdraw(attacker, &(ATTACKER_DEPOSIT));
+    }
+    
+    // NB: commenting out the stdout log from the initial test in favor of an assertion.
+    // std::println!("total_attacker_matured: {}", total_attacker_matured);
+    assert_eq!(total_attacker_matured, 0);
+    
+    // The victim withdraw the matured fees but is not able to withdraw their deposits
+    pool_client.update_fee_rewards(&victim);
+    std::println!("Victim matured: {}", pool_client.matured(&victim));
+    
+    pool_client.withdraw_matured(&victim);
+    let pool_balance = token.balance(&pool_addr);
+    if pool_balance < VICTIM_DEPOSIT {
+        std::println!("pool_balance = {} < victim_shares = {}. The victim will not be able to withdraw their deposits back.", pool_balance, VICTIM_DEPOSIT);
+    }
+    
+    // NB: before this test asserted that the withdrawal of the whole victing deposit
+    // failed due to the attacker having drained part of the funds. This line now 
+    // asserts that the victim is indeed able to 
+    assert!(pool_client.try_withdraw(&victim, &(VICTIM_DEPOSIT)).is_ok());
+    
+    let net_victim_balance = pool_balance + token.balance(&victim);
+    std::println!("net_victim_balance: {}", net_victim_balance);
+    if net_victim_balance < VICTIM_DEPOSIT {
+        std::println!("The victim has lost {} tokens", VICTIM_DEPOSIT - net_victim_balance);
+    }
+}
+
+
 #[contract]
 pub struct FlashLoanReceiver;
 

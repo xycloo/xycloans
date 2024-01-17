@@ -20,7 +20,7 @@ pub fn compute_fee_earned(
     fee_per_share_particular: i128,
 ) -> i128 {
     user_balance
-        .fixed_mul_ceil(
+        .fixed_mul_floor(
             fee_per_share_universal.sub(fee_per_share_particular),
             STROOP.into(),
         )
