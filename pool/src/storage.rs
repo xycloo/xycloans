@@ -114,6 +114,16 @@ pub(crate) fn get_token_id(e: &Env) -> Result<Address, Error> {
     }
 }
 
+pub(crate) fn write_dust(e: &Env, dust: i128) {
+    let key = DataKey::Dust;
+    e.storage().instance().set(&key, &dust);
+}
+
+pub(crate) fn read_dust(e: &Env) -> i128 {
+    let key = DataKey::Dust;
+    e.storage().instance().get(&key).unwrap_or(0)
+}
+
 // shouldn't be needed because of state expiration
 
 pub(crate) fn _remove_matured_fees_particular(e: &Env, addr: Address) {

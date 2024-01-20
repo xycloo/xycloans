@@ -1,10 +1,5 @@
 use soroban_sdk::{symbol_short, Address, Env};
 
-pub(crate) fn fees_deposited(env: &Env, from: &Address, amount: i128) {
-    let topics = (symbol_short!("fee_dep"), from);
-    env.events().publish(topics, amount);
-}
-
 pub(crate) fn deposited(env: &Env, from: Address, amount: i128) {
     let topics = (symbol_short!("deposit"), from);
     env.events().publish(topics, amount);

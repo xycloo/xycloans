@@ -13,6 +13,10 @@ name = "xycloans_pool"
 path = "src/lib.rs"
 crate-type = ["cdylib"]
 
+[features]
+default = ["moderc3156"]
+moderc3156 = []
+
 [dependencies]
 soroban-sdk = { workspace = true }
 fixed-point-math = { workspace = true }

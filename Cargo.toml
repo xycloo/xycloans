@@ -1,11 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    #"flash-loan",
-    #"receiver-standard",
     "examples/simple",
-    #"vault",
-    #"vault-interface",
+    "examples/moderc3156",
     "factory",
     "pool"
 ]

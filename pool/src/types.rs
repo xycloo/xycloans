@@ -3,15 +3,11 @@ use soroban_sdk::{contracterror, contracttype, Address};
 #[derive(Clone)]
 #[contracttype]
 pub enum DataKey {
-    ProtocolFees,
     TokenId,
-    Admin,
     TotSupply,
-    TotalDeposited,
-    FlashLoan,
-    FlashLoanB,
-    Balance(Address),
     FeePerShareUniversal,
+    Dust,
+    Balance(Address),
     FeePerShareParticular(Address),
     MaturedFeesParticular(Address),
 }
@@ -22,8 +18,8 @@ pub enum DataKey {
 pub enum Error {
     AlreadyInitialized = 0,
     NotInitialized = 1,
-    InvalidAdminAuth = 2,
-    InvalidShareBalance = 3, // needs change
-    NoFeesMatured = 4,
-    LoanNotRepaid = 5,
+    InvalidShareBalance = 2,
+    NoFeesMatured = 3,
+    LoanNotRepaid = 4,
+    BalanceLtSupply = 5
 }

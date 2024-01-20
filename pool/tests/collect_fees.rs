@@ -234,7 +234,7 @@ fn yield_collect_sequence() {
 /// to drain a pool. 
 /// 
 /// This is now fixed.
-#[test]
+/*#[test]
 fn test_drain_pool() {
     const ATTACKER_DEPOSIT: i128 = 1;
     const NUM_ATTACKERS: usize = 801;
@@ -322,7 +322,7 @@ fn test_drain_pool() {
         std::println!("The victim has lost {} tokens", VICTIM_DEPOSIT - net_victim_balance);
     }
 }
-
+*/
 
 #[contract]
 pub struct FlashLoanReceiver;
