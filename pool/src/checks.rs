@@ -15,3 +15,12 @@ pub(crate) fn check_balance_ge_supply(env: &Env, token_client: &Client) -> Resul
 
     Ok(())
 }
+
+/// Make sure that we're dealing with amounts >= 0
+pub(crate) fn check_amount_gt_0(amount: i128) -> Result<(), Error> {
+    if amount <= 0 {
+        return Err(Error::InvalidAmount);
+    }
+
+    Ok(())
+}

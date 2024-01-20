@@ -21,5 +21,6 @@ pub enum Error {
     InvalidShareBalance = 2,
     NoFeesMatured = 3,
     LoanNotRepaid = 4,
-    BalanceLtSupply = 5
+    BalanceLtSupply = 5,
+    InvalidAmount = 6
 }

@@ -34,3 +34,24 @@ fn deposit() {
     assert_eq!(token.balance(&user1), 0);
     assert_eq!(token.balance(&pool_addr), 1000000000);
 }
+
+
+#[should_panic(expected = "HostError: Error(Contract, #6)")]
+#[test]
+fn deposit_0() {
+    let e: Env = Default::default();
+    e.mock_all_auths();
+
+    let admin1 = Address::generate(&e);
+
+    let user1 = Address::generate(&e);
+
+    let token_id = e.register_stellar_asset_contract(admin1);
+
+    let pool_addr = e.register_contract_wasm(&None, pool::WASM); // 5;32
+    let pool_client = pool::Client::new(&e, &pool_addr);
+
+    pool_client.initialize(&token_id);
+
+    pool_client.deposit(&user1, &0);
+}

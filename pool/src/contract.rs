@@ -1,5 +1,5 @@
 use crate::{
-    balance::{burn_shares, mint_shares}, checks::check_balance_ge_supply, compute_fee, events, execution::{invoke_receiver, invoke_receiver_moderc3156}, rewards::{pay_matured, update_rewards}, storage::*, token_utility::{get_token_client, transfer, transfer_in_pool, try_repay}, types::Error
+    balance::{burn_shares, mint_shares}, checks::{check_amount_gt_0, check_balance_ge_supply}, compute_fee, events, execution::{invoke_receiver, invoke_receiver_moderc3156}, rewards::{pay_matured, update_rewards}, storage::*, token_utility::{get_token_client, transfer, transfer_in_pool, try_repay}, types::Error
 };
 use soroban_sdk::{contract, contractimpl, Address, Env};
 
@@ -97,6 +97,8 @@ impl Initializable for Pool {
 #[contractimpl]
 impl Vault for Pool {
     fn deposit(env: Env, from: Address, amount: i128) -> Result<(), Error> {
+        check_amount_gt_0(amount)?;
+
         from.require_auth();
 
         bump_instance(&env);
@@ -148,6 +150,8 @@ impl Vault for Pool {
     }
 
     fn withdraw(env: Env, addr: Address, amount: i128) -> Result<(), Error> {
+        check_amount_gt_0(amount)?;
+        
         // require lender auth for withdrawal
         addr.require_auth();
 
@@ -192,6 +196,8 @@ impl Vault for Pool {
 impl FlashLoanModErc3156 for Pool {
     fn borrow_erc(env: Env, initiator: Address, receiver_id: Address, amount: i128) -> Result<(), Error> {
         initiator.require_auth();
+        check_amount_gt_0(amount)?;
+        
         bump_instance(&env);
 
         let client = get_token_client(&env);
@@ -219,6 +225,8 @@ impl FlashLoanModErc3156 for Pool {
 #[contractimpl]
 impl FlashLoan for Pool {
     fn borrow(env: Env, receiver_id: Address, amount: i128) -> Result<(), Error> {
+        check_amount_gt_0(amount)?;
+
         bump_instance(&env);
 
         let client = get_token_client(&env);
