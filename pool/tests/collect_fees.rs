@@ -234,7 +234,7 @@ fn yield_collect_sequence() {
 /// to drain a pool. 
 /// 
 /// This is now fixed.
-/*#[test]
+#[test]
 fn test_drain_pool() {
     const ATTACKER_DEPOSIT: i128 = 1;
     const NUM_ATTACKERS: usize = 801;
@@ -315,14 +315,9 @@ fn test_drain_pool() {
     // failed due to the attacker having drained part of the funds. This line now 
     // asserts that the victim is indeed able to 
     assert!(pool_client.try_withdraw(&victim, &(VICTIM_DEPOSIT)).is_ok());
-    
-    let net_victim_balance = pool_balance + token.balance(&victim);
-    std::println!("net_victim_balance: {}", net_victim_balance);
-    if net_victim_balance < VICTIM_DEPOSIT {
-        std::println!("The victim has lost {} tokens", VICTIM_DEPOSIT - net_victim_balance);
-    }
+
 }
-*/
+
 
 #[contract]
 pub struct FlashLoanReceiver;
