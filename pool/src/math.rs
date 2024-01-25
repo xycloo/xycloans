@@ -11,7 +11,7 @@ pub fn compute_fee_per_share(
 ) -> I128WithDust {
     let interest_by_supply = accrued_interest.fixed_div_floor(total_supply, STROOP.into()).unwrap();
     let computed_floored = fee_per_share_universal.add(interest_by_supply);
-    let dust = accrued_interest - interest_by_supply.fixed_mul_floor(total_supply, STROOP.into()).unwrap();
+    let dust = accrued_interest - interest_by_supply.fixed_mul_ceil(total_supply, STROOP.into()).unwrap();
 
     (computed_floored, dust)
 }

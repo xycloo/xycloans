@@ -1,5 +1,5 @@
 use crate::{
-    events, math::{compute_fee_earned, compute_fee_per_share, I128WithDust}, storage::*, token_utility::{get_token_client, transfer}, types::Error
+    math::{compute_fee_earned, compute_fee_per_share, I128WithDust}, storage::*, token_utility::{get_token_client, transfer}, types::Error
 };
 use core::ops::AddAssign;
 use soroban_sdk::{Address, Env};
@@ -17,8 +17,7 @@ pub(crate) fn update_rewards(e: &Env, addr: Address) {
     let mut matured = read_matured_fees_particular(e, addr.clone());
     matured.add_assign(lender_fees);
     
-    write_matured_fees_particular(e, addr.clone(), matured);
-    events::matured_updated(e, addr, matured);
+    write_matured_fees_particular(e, addr, matured);
 }
 
 pub(crate) fn update_fee_per_share_universal(e: &Env, collected: i128) {

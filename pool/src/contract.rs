@@ -115,9 +115,6 @@ impl Vault for Pool {
         // shares to mint will always be the amount deposited, see https://github.com/xycloo/xycloans/issues/17
         mint_shares(&env, from.clone(), amount);
 
-        // ensure that the pool's balance is >= total supply
-        check_balance_ge_supply(&env, &token_client)?;
-
         events::deposited(&env, from, amount);
         Ok(())
     }
@@ -142,9 +139,6 @@ impl Vault for Pool {
         bump_instance(&env);
 
         update_rewards(&env, addr);
-
-        // ensure that the pool's balance is >= total supply
-        check_balance_ge_supply(&env, &get_token_client(&env))?;
 
         Ok(())
     }
@@ -174,9 +168,6 @@ impl Vault for Pool {
 
         // burn the shares
         burn_shares(&env, addr.clone(), amount);
-
-        // ensure that the pool's balance is >= total supply
-        check_balance_ge_supply(&env, &token_client)?;
 
         events::withdrawn(&env, addr, amount);
         Ok(())
@@ -213,9 +204,6 @@ impl FlashLoanModErc3156 for Pool {
         // try `transfer_from()` of (`amount` + fees) from the receiver to the flash loan
         try_repay(&env, &client, &receiver_id, amount, fee)?;
 
-        // ensure that the pool's balance is >= total supply
-        check_balance_ge_supply(&env, &client)?;
-
         events::loan_successful(&env, receiver_id, amount);
         Ok(())
     }
@@ -241,9 +229,6 @@ impl FlashLoan for Pool {
 
         // try `transfer_from()` of (`amount` + fees) from the receiver to the flash loan
         try_repay(&env, &client, &receiver_id, amount, fee)?;
-
-        // ensure that the pool's balance is >= total supply
-        check_balance_ge_supply(&env, &client)?;
 
         events::loan_successful(&env, receiver_id, amount);
         Ok(())

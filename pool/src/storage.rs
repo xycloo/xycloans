@@ -1,8 +1,7 @@
 use soroban_sdk::{Address, Env};
 
 use crate::{
-    types::{DataKey, Error},
-    INSTANCE_LEDGER_LIFE, PERSISTENT_LEDGER_LIFE, PERSISTENT_LEDGER_TTL_THRESHOLD, INSTANCE_LEDGER_TTL_THRESHOLD,
+    events, types::{DataKey, Error}, INSTANCE_LEDGER_LIFE, INSTANCE_LEDGER_TTL_THRESHOLD, PERSISTENT_LEDGER_LIFE, PERSISTENT_LEDGER_TTL_THRESHOLD
 };
 
 // User specific state.
@@ -48,9 +47,11 @@ pub(crate) fn read_fee_per_share_particular(e: &Env, addr: Address) -> i128 {
 }
 
 pub(crate) fn write_matured_fees_particular(e: &Env, addr: Address, amount: i128) {
-    let key = DataKey::MaturedFeesParticular(addr);
+    let key = DataKey::MaturedFeesParticular(addr.clone());
     e.storage().persistent().set(&key, &amount);
     bump_persistent(e, &key);
+
+    events::matured_updated(e, addr, amount);
 }
 
 pub(crate) fn read_matured_fees_particular(e: &Env, addr: Address) -> i128 {
