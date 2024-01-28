@@ -59,10 +59,7 @@ impl AdminInterface for XycloansFactory {
             return Err(Error::PoolExists)
         }
 
-        let pool_address = env
-            .deployer()
-            .with_address(env.current_contract_address(), salt)
-            .deploy(read_pool_hash(&env));
+        let pool_address = env.deployer().with_current_contract(salt).deploy(read_pool_hash(&env));
 
         let pool = pool::Client::new(&env, &pool_address);
         pool.initialize(&token_address);
