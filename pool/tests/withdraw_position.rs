@@ -45,6 +45,37 @@ fn withdraw_liquidity_raw() {
     assert_eq!(token.balance(&pool_addr), (20 * STROOP as i128));
 }
 
+#[should_panic(expected = "HostError: Error(Contract, #6)")]
+#[test]
+fn withdraw_liquidity_0() {
+    let env: Env = Default::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin1 = Address::generate(&env);
+    let user1 = Address::generate(&env);
+
+    let token_id = env.register_stellar_asset_contract(admin1);
+    let token_admin = token::StellarAssetClient::new(&env, &token_id);
+    let token = token::Client::new(&env, &token_id);
+
+    let pool_addr = env.register_contract_wasm(&None, pool::WASM);
+    let pool_client = pool::Client::new(&env, &pool_addr);
+
+    // initialize the pool.
+    pool_client.initialize(&token_id);
+
+    token_admin.mint(&user1, &(100 * STROOP as i128));
+
+    // user1 deposits 50 TOKEN into the pool.
+    pool_client.deposit(&user1, &(50 * STROOP as i128));
+    assert_eq!(token.balance(&user1), (50 * STROOP as i128));
+    assert_eq!(token.balance(&pool_addr), (50 * STROOP as i128));
+
+    pool_client.withdraw(&user1, &0);
+}
+
+
 // Tests the liquidity withdrawal functionality after having
 // matured yield. Expected behaviour is for the withdrawal
 // to not also withdraw matured yield, only to update the

@@ -1,16 +1,17 @@
 use crate::{
-    balance::{burn_shares, mint_shares},
-    events,
-    execution::invoke_receiver,
-    rewards::{pay_matured, update_rewards},
-    storage::*,
-    token_utility::{get_token_client, transfer, transfer_in_pool, try_repay},
-    types::Error,
+    balance::{burn_shares, mint_shares}, checks::{check_amount_gt_0, check_balance_ge_supply}, compute_fee, events, execution::{invoke_receiver, invoke_receiver_moderc3156}, rewards::{pay_matured, update_rewards}, storage::*, token_utility::{get_token_client, transfer, transfer_in_pool, try_repay}, types::Error
 };
 use soroban_sdk::{contract, contractimpl, Address, Env};
 
 #[contract]
 pub struct Pool;
+
+pub trait FlashLoanModErc3156 {
+    /// The entry point for executing a flash loan, the initiator (or borrower) provides:
+    /// `receiver_id: Address` The address of the receiver contract which contains the borrowing logic.
+    /// `amount` Amount of `token_id` to borrow (`token_id` is set when the contract is initialized).
+    fn borrow_erc(e: Env, initiator: Address, receiver_id: Address, amount: i128) -> Result<(), Error>;
+}
 
 pub trait FlashLoan {
     /// The entry point for executing a flash loan, the initiator (or borrower) provides:
@@ -18,6 +19,7 @@ pub trait FlashLoan {
     /// `amount` Amount of `token_id` to borrow (`token_id` is set when the contract is initialized).
     fn borrow(e: Env, receiver_id: Address, amount: i128) -> Result<(), Error>;
 }
+
 
 pub trait Vault {
     /// deposit
@@ -95,6 +97,8 @@ impl Initializable for Pool {
 #[contractimpl]
 impl Vault for Pool {
     fn deposit(env: Env, from: Address, amount: i128) -> Result<(), Error> {
+        check_amount_gt_0(amount)?;
+
         from.require_auth();
 
         bump_instance(&env);
@@ -115,29 +119,33 @@ impl Vault for Pool {
         Ok(())
     }
 
-    fn withdraw_matured(e: Env, addr: Address) -> Result<(), Error> {
+    fn withdraw_matured(env: Env, addr: Address) -> Result<(), Error> {
         // require lender auth for withdrawal
         addr.require_auth();
 
-        bump_instance(&e);
+        bump_instance(&env);
 
         // pay the matured yield
-        let paid = pay_matured(&e, addr.clone())?;
+        let paid = pay_matured(&env, addr.clone())?;
 
-        events::matured_withdrawn(&e, addr, paid);
+        // ensure that the pool's balance is >= total supply
+        check_balance_ge_supply(&env, &get_token_client(&env))?;
+
+        events::matured_withdrawn(&env, addr, paid);
         Ok(())
     }
 
-    fn update_fee_rewards(e: Env, addr: Address) -> Result<(), Error> {
-        bump_instance(&e);
+    fn update_fee_rewards(env: Env, addr: Address) -> Result<(), Error> {
+        bump_instance(&env);
 
-        let matured = update_rewards(&e, addr.clone());
+        update_rewards(&env, addr);
 
-        events::matured_updated(&e, addr, matured);
         Ok(())
     }
 
     fn withdraw(env: Env, addr: Address, amount: i128) -> Result<(), Error> {
+        check_amount_gt_0(amount)?;
+        
         // require lender auth for withdrawal
         addr.require_auth();
 
@@ -174,23 +182,55 @@ impl Vault for Pool {
     }
 }
 
+#[cfg(feature="moderc3156")]
 #[contractimpl]
-impl FlashLoan for Pool {
-    fn borrow(e: Env, receiver_id: Address, amount: i128) -> Result<(), Error> {
-        bump_instance(&e);
+impl FlashLoanModErc3156 for Pool {
+    fn borrow_erc(env: Env, initiator: Address, receiver_id: Address, amount: i128) -> Result<(), Error> {
+        initiator.require_auth();
+        check_amount_gt_0(amount)?;
+        
+        bump_instance(&env);
 
-        let client = get_token_client(&e);
+        let client = get_token_client(&env);
 
         // transfer `amount` to `receiver_id`
-        transfer(&e, &client, &receiver_id, &amount);
+        transfer(&env, &client, &receiver_id, &amount);
 
         // invoke the `exec_op()` function of the receiver contract
-        invoke_receiver(&e, &receiver_id);
+        let fee = compute_fee(&amount);
+
+        invoke_receiver_moderc3156(&env, &receiver_id, &client.address, &amount, &fee);
 
         // try `transfer_from()` of (`amount` + fees) from the receiver to the flash loan
-        try_repay(&e, &client, &receiver_id, amount)?;
+        try_repay(&env, &client, &receiver_id, amount, fee)?;
 
-        events::loan_successful(&e, receiver_id, amount);
+        events::loan_successful(&env, receiver_id, amount);
+        Ok(())
+    }
+}
+
+//#[cfg(not(feature="moderc3156"))]
+#[contractimpl]
+impl FlashLoan for Pool {
+    fn borrow(env: Env, receiver_id: Address, amount: i128) -> Result<(), Error> {
+        check_amount_gt_0(amount)?;
+
+        bump_instance(&env);
+
+        let client = get_token_client(&env);
+
+        // transfer `amount` to `receiver_id`
+        transfer(&env, &client, &receiver_id, &amount);
+
+        // invoke the `exec_op()` function of the receiver contract
+        let fee = compute_fee(&amount);
+
+        invoke_receiver(&env, &receiver_id);
+
+        // try `transfer_from()` of (`amount` + fees) from the receiver to the flash loan
+        try_repay(&env, &client, &receiver_id, amount, fee)?;
+
+        events::loan_successful(&env, receiver_id, amount);
         Ok(())
     }
 }

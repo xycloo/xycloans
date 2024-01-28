@@ -1,5 +1,5 @@
 use crate::{
-    compute_fee, events, rewards::update_fee_per_share_universal, storage::get_token_id,
+    rewards::update_fee_per_share_universal, storage::get_token_id,
     types::Error,
 };
 use soroban_sdk::{token, Address, Env};
@@ -49,18 +49,15 @@ pub(crate) fn try_repay(
     client: &token::Client,
     receiver_id: &Address,
     amount: i128,
+    fee: i128,
 ) -> Result<(), Error> {
-    let fees = compute_fee(&amount);
-
     // xfer back the lent capital + fees from the receiver contract to the flash loan
-    transfer_from_to_pool(e, client, receiver_id, &(amount + fees))?;
+    transfer_from_to_pool(e, client, receiver_id, &(amount + fee))?;
 
     // loan is now repaid with interest.
     // we need to update the fee_per_share_universal
     // parameter since we inputted more money in the pool.
-    update_fee_per_share_universal(&e, fees);
-
-    events::fees_deposited(&e, receiver_id, amount);
+    update_fee_per_share_universal(&e, fee);
 
     Ok(())
 }
