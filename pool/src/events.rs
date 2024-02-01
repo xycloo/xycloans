@@ -10,8 +10,8 @@ pub(crate) fn matured_withdrawn(env: &Env, addr: Address, withdrawn: i128) {
     env.events().publish(topics, withdrawn);
 }
 
-pub(crate) fn matured_updated(env: &Env, addr: Address, matured: i128) {
-    let topics = (symbol_short!("updatefee"), addr);
+pub(crate) fn new_fees(env: &Env, addr: Address, matured: i128) {
+    let topics = (symbol_short!("newfee"), addr);
     env.events().publish(topics, matured);
 }
 
