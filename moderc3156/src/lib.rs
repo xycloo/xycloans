@@ -1,3 +1,5 @@
+#![no_std]
+
 use soroban_sdk::{contractclient, Address, Env};
 
 #[contractclient(name = "FlashLoanClient")]
