@@ -3,9 +3,10 @@ resolver = "2"
 members = [
     "examples/simple",
     "examples/moderc3156",
+    "moderc3156",
     "factory",
     "pool"
-]
+, "moderc3156"]
 
 [profile.release-with-logs]
 inherits = "release"
