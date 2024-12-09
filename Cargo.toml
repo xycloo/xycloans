@@ -23,7 +23,7 @@ lto = true
 
 
 [workspace.dependencies.soroban-sdk]
-version = "20.0.0"
+version = "22.0.1"
 
 
 [workspace.dependencies.fixed-point-math]
